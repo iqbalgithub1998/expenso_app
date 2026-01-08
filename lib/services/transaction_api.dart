@@ -8,7 +8,7 @@ class TransactionApi {
     return await _client.post(ApiConstants.transactions, data);
   }
 
-  Future<List> getTransactions(String friendId) async {
+  Future<dynamic> getTransactions(String friendId) async {
     return await _client.get("${ApiConstants.transactions}/$friendId");
   }
 }

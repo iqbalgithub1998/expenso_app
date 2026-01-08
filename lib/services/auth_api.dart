@@ -4,18 +4,16 @@ import 'api_client.dart';
 class AuthApi {
   final _client = ApiClient();
 
-  Future<Map<String, dynamic>> login(String email, String password) async {
-    return await _client.post("${ApiConstants.auth}/login", {
+  Future<dynamic> login(String email, String password) async {
+    final response = await _client.post("${ApiConstants.auth}/login", {
       "email": email,
       "password": password,
     });
+
+    return response;
   }
 
-  Future<Map<String, dynamic>> register(
-    String name,
-    String email,
-    String password,
-  ) async {
+  Future<dynamic> register(String name, String email, String password) async {
     return await _client.post("${ApiConstants.auth}/register", {
       "name": name,
       "email": email,
@@ -23,7 +21,7 @@ class AuthApi {
     });
   }
 
-  Future<Map<String, dynamic>> verify() async {
+  Future<dynamic> verify() async {
     return await _client.get("${ApiConstants.auth}/refresh");
   }
 }

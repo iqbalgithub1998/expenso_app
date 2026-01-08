@@ -9,17 +9,30 @@ import '../models/expense_model.dart';
 class ExpenseController extends GetxController {
   final api = ExpenseApi();
   RxList<Expense> expenses = RxList([]);
+  RxList<Expense> TodayExpenses = RxList([]);
+  final selectedMonth = DateTime.now().obs;
+  final monthlyExpenseTotal = 0.0.obs;
 
   @override
   void onInit() {
     super.onInit();
-    fetchExpenses();
+    var month = selectedMonth.value.month.toString().padLeft(2, '0');
+    var year = selectedMonth.value.year;
+    var date = "$year-$month";
+    fetchExpenses(date);
   }
 
-  Future fetchExpenses() async {
-    final res = await api.getExpenses();
+  Future fetchExpenses(String date) async {
+    final res = await api.getExpenses(date);
+    if (res == null) return;
     log(res.toString());
-    expenses.value = expenseFromJson(json.encode(res));
+    log('${DateTime.now().year}-${DateTime.now().month}');
+    if (res["month"] ==
+        '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}') {
+      TodayExpenses.value = expenseFromJson(json.encode(res["expenses"]));
+    }
+    expenses.value = expenseFromJson(json.encode(res["expenses"]));
+    monthlyExpenseTotal.value = res["total"].toDouble();
   }
 
   Future addExpense({
@@ -34,14 +47,15 @@ class ExpenseController extends GetxController {
       "description": description,
       "date": date.toIso8601String(),
     };
-    await api.addExpense(data);
-    fetchExpenses();
+    final res = await api.addExpense(data);
+    if (res == null) return;
+    fetchExpenses('${selectedMonth.value.year}-${selectedMonth.value.month}');
   }
 
   Map<int, double> getMonthlyExpenseMap(DateTime month) {
     final Map<int, double> dailyTotals = {};
 
-    for (var e in expenses) {
+    for (var e in TodayExpenses) {
       if (e.date.year == month.year && e.date.month == month.month) {
         final day = e.date.day;
         dailyTotals[day] = (dailyTotals[day] ?? 0) + e.amount;
@@ -51,36 +65,58 @@ class ExpenseController extends GetxController {
     return dailyTotals;
   }
 
-  // void addDummyMonthlyExpenses() {
-  //   if (expenses.isNotEmpty) return; // prevent duplicates
+  List<Expense> get monthlyExpenses {
+    return expenses.where((expense) {
+      return expense.date.year == selectedMonth.value.year &&
+          expense.date.month == selectedMonth.value.month;
+    }).toList();
+  }
 
-  //   final now = DateTime.now();
-  //   final randomAmounts = [
-  //     120,
-  //     340,
-  //     560,
-  //     220,
-  //     890,
-  //     150,
-  //     430,
-  //     700,
-  //     260,
-  //     510,
-  //     90,
-  //     310,
-  //     640,
-  //   ];
-
-  //   for (int i = 0; i < randomAmounts.length; i++) {
-  //     expenses.add(
-  //       ExpenseModel(
-  //         id: const Uuid().v4(),
-  //         amount: randomAmounts[i].toDouble(),
-  //         category: "Food",
-  //         description: "Dummy expense",
-  //         date: DateTime(now.year, now.month, i + 1),
-  //       ),
-  //     );
-  //   }
+  // double get monthlyTotal {
+  //   return monthlyExpenses.fold(0, (sum, expense) => sum + expense.amount);
   // }
+
+  // Group expenses by date
+  Map<DateTime, List<Expense>> get groupedExpenses {
+    final Map<DateTime, List<Expense>> grouped = {};
+
+    for (var expense in monthlyExpenses) {
+      final dateOnly = DateTime(
+        expense.date.year,
+        expense.date.month,
+        expense.date.day,
+      );
+
+      if (grouped[dateOnly] == null) {
+        grouped[dateOnly] = [];
+      }
+      grouped[dateOnly]!.add(expense);
+    }
+
+    return grouped;
+  }
+
+  void previousMonth() {
+    fetchExpenses(
+      '${selectedMonth.value.year}-${selectedMonth.value.month - 1}',
+    );
+    selectedMonth.value = DateTime(
+      selectedMonth.value.year,
+      selectedMonth.value.month - 1,
+    );
+  }
+
+  void nextMonth() {
+    fetchExpenses(
+      '${selectedMonth.value.year}-${selectedMonth.value.month + 1}',
+    );
+    selectedMonth.value = DateTime(
+      selectedMonth.value.year,
+      selectedMonth.value.month + 1,
+    );
+  }
+
+  void deleteExpense(String id) {
+    expenses.removeWhere((e) => e.id == id);
+  }
 }

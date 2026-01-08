@@ -15,14 +15,12 @@ class DashboardController extends GetxController {
   // 📅 Today's expense
   double get todayExpense {
     final today = DateTime.now();
-    return expenseController.expenses
-        .where(
-          (e) =>
-              e.date.year == today.year &&
-              e.date.month == today.month &&
-              e.date.day == today.day,
-        )
-        .fold(0.0, (sum, e) => sum + e.amount);
+    return expenseController.TodayExpenses.where(
+      (e) =>
+          e.date.year == today.year &&
+          e.date.month == today.month &&
+          e.date.day == today.day,
+    ).fold(0.0, (sum, e) => sum + e.amount);
   }
 
   // 🟢 You will take

@@ -31,6 +31,9 @@ class FriendController extends GetxController {
 
   void addFriend(String name, String phone) async {
     final res = await api.addFriend({"name": name, "phone": phone});
+    if (res == null) {
+      return;
+    }
     friends.add(FriendModel.fromJson(res));
   }
 
@@ -63,5 +66,20 @@ class FriendController extends GetxController {
 
   List<FriendTransactionModel> friendTransactions(String friendId) {
     return transactions.where((t) => t.friendId == friendId).toList();
+  }
+
+  Map<String, double> getBalanceSummary() {
+    double toReceive = 0;
+    double toPay = 0;
+
+    for (var friend in friends) {
+      if (friend.balance > 0) {
+        toReceive += friend.balance;
+      } else if (friend.balance < 0) {
+        toPay += friend.balance.abs();
+      }
+    }
+
+    return {'toReceive': toReceive, 'toPay': toPay};
   }
 }

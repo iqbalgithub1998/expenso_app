@@ -22,8 +22,16 @@ class ApiClient {
     };
   }
 
-  Future<dynamic> get(String url) async {
-    final res = await http.get(Uri.parse(url), headers: _headers);
+  Future<dynamic> get(String url, [Map<String, String>? query]) async {
+    Uri uri;
+
+    if (query != null && query.isNotEmpty) {
+      uri = Uri.parse(url).replace(queryParameters: query);
+    } else {
+      uri = Uri.parse(url);
+    }
+
+    final res = await http.get(uri, headers: _headers);
     return _handleResponse(res);
   }
 
@@ -52,7 +60,7 @@ class ApiClient {
         jsonDecode(res.body)["message"],
         backgroundColor: Colors.red,
       );
-      throw Exception(jsonDecode(res.body)["message"]);
+      return null;
     }
   }
 }

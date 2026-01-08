@@ -19,7 +19,11 @@ class AuthController extends GetxController {
   Future login(String email, String password) async {
     isLoading.value = true;
     final res = await api.login(email, password);
+    log(res.toString());
     isLoading.value = false;
+    if (res == null) {
+      return;
+    }
     storage.write("ExpensoAuthToken", res["token"]);
     token.value = res["token"];
     authUser = User.fromJson(res["user"]);
@@ -30,6 +34,9 @@ class AuthController extends GetxController {
   Future register(String name, String email, String password) async {
     log("name: $name, email: $email, password: $password");
     final res = await api.register(name, email, password);
+    if (res == null) {
+      return;
+    }
     storage.write("ExpensoAuthToken", res["token"]);
     token.value = res["token"];
     authUser = User.fromJson(res["user"]);
@@ -38,6 +45,9 @@ class AuthController extends GetxController {
 
   Future<void> verify() async {
     final res = await api.verify();
+    if (res == null) {
+      return;
+    }
     authUser = User.fromJson(res["user"]);
   }
 
@@ -51,6 +61,9 @@ class AuthController extends GetxController {
     log("token found: $token");
     try {
       final res = await api.verify();
+      if (res == null) {
+        return "No User";
+      }
       authUser = User.fromJson(res["user"]);
       return "User";
     } catch (e) {

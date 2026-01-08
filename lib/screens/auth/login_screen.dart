@@ -91,7 +91,8 @@ class LoginScreen extends StatelessWidget {
                           },
                           child: AuthController.instance.isLoading.value
                               ? SizedBox(
-                                  height: 20,
+                                  height: 15,
+                                  width: 15,
                                   child: const CircularProgressIndicator(
                                     color: Colors.white,
                                   ),
