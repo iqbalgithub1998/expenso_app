@@ -4,6 +4,10 @@ import 'package:get/get.dart';
 
 class DashboardController extends GetxController {
   var currentIndex = 0.obs;
+  // final todayExpense = 0.0.obs;
+
+  // final totalTake = 0.0.obs;
+  // final totalPay = 0.0.obs;
 
   final expenseController = Get.find<ExpenseController>();
   final friendController = Get.find<FriendController>();
@@ -12,8 +16,11 @@ class DashboardController extends GetxController {
     currentIndex.value = index;
   }
 
-  // 📅 Today's expense
+  // 📅 Today's expense - Make it reactive
   double get todayExpense {
+    // Access the observable to create reactive dependency
+    expenseController.TodayExpenses.length; // This triggers reactivity
+
     final today = DateTime.now();
     return expenseController.TodayExpenses.where(
       (e) =>
@@ -21,6 +28,17 @@ class DashboardController extends GetxController {
           e.date.month == today.month &&
           e.date.day == today.day,
     ).fold(0.0, (sum, e) => sum + e.amount);
+  }
+
+  // 📅 Monthly expense - Make it reactive
+  double get monthlyExpense {
+    // Access the observable to create reactive dependency
+    expenseController.monthlyExpenses.length; // This triggers reactivity
+
+    return expenseController.monthlyExpenses.fold(
+      0.0,
+      (sum, e) => sum + e.amount,
+    );
   }
 
   // 🟢 You will take

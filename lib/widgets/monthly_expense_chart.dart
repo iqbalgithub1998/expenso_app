@@ -48,14 +48,7 @@ class MonthlyExpenseChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(TSizes.defaultPadding),
-              child: const Text(
-                "Monthly Expense",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: SizedBox(
