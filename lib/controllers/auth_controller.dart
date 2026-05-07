@@ -1,79 +1,69 @@
-import 'dart:developer';
-
-import 'package:expenso/models/user_model.dart';
-import 'package:expenso/screens/auth/login_screen.dart';
-import 'package:expenso/screens/dashboard/dashboard_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
-import '../services/auth_api.dart';
 
 class AuthController extends GetxController {
-  static AuthController get instance => Get.find();
+  // --- Tab State ---
+  final RxInt selectedTab = 0.obs; // 0 = Login, 1 = Register
 
-  final api = AuthApi();
-  final storage = GetStorage();
-  final Rx<String?> token = Rx<String?>(null);
-  User? authUser;
-  final RxBool isLoading = false.obs;
+  // --- Form Keys ---
+  final loginFormKey = GlobalKey<FormState>();
+  final registerFormKey = GlobalKey<FormState>();
 
-  Future login(String email, String password) async {
-    isLoading.value = true;
-    final res = await api.login(email, password);
-    log(res.toString());
-    isLoading.value = false;
-    if (res == null) {
-      return;
-    }
-    storage.write("ExpensoAuthToken", res["token"]);
-    token.value = res["token"];
-    authUser = User.fromJson(res["user"]);
-    // log(res.toString());
-    Get.offAll(() => DashboardScreen());
+  // --- Login Fields ---
+  final loginEmail = TextEditingController();
+  final loginPassword = TextEditingController();
+
+  // --- Register Fields ---
+  final registerName = TextEditingController();
+  final registerPhone = TextEditingController();
+  final registerEmail = TextEditingController();
+  final registerPassword = TextEditingController();
+  final registerConfirmPassword = TextEditingController();
+
+  // --- Password Visibility ---
+  final RxBool isLoginPasswordVisible = false.obs;
+  final RxBool isRegisterPasswordVisible = false.obs;
+  final RxBool isRegisterConfirmPasswordVisible = false.obs;
+
+  void switchTab(int index) {
+    if (selectedTab.value == index) return;
+    selectedTab.value = index;
   }
 
-  Future register(String name, String email, String password) async {
-    log("name: $name, email: $email, password: $password");
-    final res = await api.register(name, email, password);
-    if (res == null) {
-      return;
-    }
-    storage.write("ExpensoAuthToken", res["token"]);
-    token.value = res["token"];
-    authUser = User.fromJson(res["user"]);
-    Get.offAll(() => DashboardScreen());
+  void toggleLoginPasswordVisibility() {
+    isLoginPasswordVisible.value = !isLoginPasswordVisible.value;
   }
 
-  Future<void> verify() async {
-    final res = await api.verify();
-    if (res == null) {
-      return;
-    }
-    authUser = User.fromJson(res["user"]);
+  void toggleRegisterPasswordVisibility() {
+    isRegisterPasswordVisible.value = !isRegisterPasswordVisible.value;
   }
 
-  Future<String> initAuthUser() async {
-    final token = await storage.read('ExpensoAuthToken');
-    log("token: $token");
+  void toggleRegisterConfirmPasswordVisibility() {
+    isRegisterConfirmPasswordVisible.value =
+        !isRegisterConfirmPasswordVisible.value;
+  }
 
-    if (token == null) {
-      return "No User";
-    }
-    log("token found: $token");
-    try {
-      final res = await api.verify();
-      if (res == null) {
-        return "No User";
-      }
-      authUser = User.fromJson(res["user"]);
-      return "User";
-    } catch (e) {
-      // developer.log("initAuthUser: $e");
-      return 'No User';
+  void onLoginPressed() {
+    if (loginFormKey.currentState!.validate()) {
+      // TODO: Implement Supabase login
     }
   }
 
-  signOut() {
-    storage.remove("ExpensoAuthToken");
-    Get.offAll(() => LoginScreen());
+  void onRegisterPressed() {
+    if (registerFormKey.currentState!.validate()) {
+      // TODO: Implement Supabase registration
+    }
+  }
+
+  @override
+  void onClose() {
+    loginEmail.dispose();
+    loginPassword.dispose();
+    registerName.dispose();
+    registerPhone.dispose();
+    registerEmail.dispose();
+    registerPassword.dispose();
+    registerConfirmPassword.dispose();
+    super.onClose();
   }
 }

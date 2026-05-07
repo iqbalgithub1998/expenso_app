@@ -1,6 +1,6 @@
 import 'package:expenso/bindings/general_binding.dart';
-import 'package:expenso/core/constants/colors.dart';
 import 'package:expenso/repositories/auth_repository.dart';
+import 'package:expenso/screens/auth/auth_screen.dart';
 
 import 'package:expenso/utils/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -47,17 +47,14 @@ class MyApp extends StatelessWidget {
     return ScreenUtilInit(
       designSize: const Size(430, 932),
       builder: (context, child) => GetMaterialApp(
-        title: 'Editora AI',
+        title: 'Expenso',
         // themeMode: ThemeMode.system,
         theme: TAppTheme.lightTheme,
         darkTheme: TAppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
         initialBinding: GeneralBindings(),
         // getPages: AppPages.pages,
-        home: const Scaffold(
-          backgroundColor: TColors.secondary,
-          body: Center(child: CircularProgressIndicator(color: Colors.white)),
-        ),
+        home: const AuthScreen(),
       ),
     );
     // home: const VideoListingScreen()),
