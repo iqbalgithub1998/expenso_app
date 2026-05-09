@@ -1,6 +1,8 @@
 import 'package:expenso/bindings/general_binding.dart';
 import 'package:expenso/repositories/auth_repository.dart';
 import 'package:expenso/screens/auth/auth_screen.dart';
+import 'package:expenso/screens/dashboard/expense_screen.dart';
+import 'package:expenso/screens/dashboard/home_screen.dart';
 
 import 'package:expenso/utils/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -54,7 +56,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         initialBinding: GeneralBindings(),
         // getPages: AppPages.pages,
-        home: const AuthScreen(),
+        home: const ExpenseScreen(),
       ),
     );
     // home: const VideoListingScreen()),

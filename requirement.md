@@ -130,20 +130,7 @@ Tap "With Whom" field
 - Tap a record → view details with settlement history
 - **Summary bar at top:** Total Lent | Total Borrowed | Net Balance
 
-### 3.3 Settlement Screen
-**Route:** `/transaction/settle/:id`
 
-| Field  | Type   | Validation                                         |
-|--------|--------|-----------------------------------------------------|
-| Amount | Number | Required, > 0, ≤ remaining balance                  |
-| Date   | Date   | Required, defaults to today                          |
-| Note   | Text   | Optional                                             |
-
-- Allows **partial settlement** (e.g., lent ₹1000, friend returns ₹400 now)
-- Settlement history shown below the form
-- Auto-update status: Pending → Partially Settled → Settled
-
----
 
 ## 💳 Module 4 — Credit Card Tracker
 
