@@ -1,9 +1,11 @@
 import 'package:expenso/bindings/general_binding.dart';
 import 'package:expenso/repositories/auth_repository.dart';
-import 'package:expenso/screens/auth/auth_screen.dart';
-import 'package:expenso/screens/dashboard/expense_screen.dart';
-import 'package:expenso/screens/dashboard/home_screen.dart';
-
+import 'package:expenso/screens/dashboard/add_lend_borrow.dart';
+import 'package:expenso/screens/dashboard/credit_card_details.dart';
+import 'package:expenso/screens/dashboard/credit_cards.dart';
+import 'package:expenso/screens/dashboard/friend_transaction.dart';
+import 'package:expenso/screens/dashboard/lend_borrow.dart';
+import 'package:expenso/screens/dashboard/profile.dart';
 import 'package:expenso/utils/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -56,7 +58,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         initialBinding: GeneralBindings(),
         // getPages: AppPages.pages,
-        home: const ExpenseScreen(),
+        home: const ProfileScreen(),
       ),
     );
     // home: const VideoListingScreen()),
