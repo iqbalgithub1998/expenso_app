@@ -365,9 +365,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-
-            // ── Bottom Navigation Bar ────────────────────────────────────
-            _BottomNavBar(),
           ],
         ),
       ),
@@ -474,90 +471,3 @@ class _Divider extends StatelessWidget {
   }
 }
 
-// ── Bottom Navigation Bar ──────────────────────────────────────────────────────
-
-class _BottomNavBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(
-                icon: Icons.home_outlined,
-                label: 'HOME',
-                isActive: false,
-              ),
-              _NavItem(
-                icon: Icons.account_balance_wallet_outlined,
-                label: 'EXPENSES',
-                isActive: false,
-              ),
-              _NavItem(
-                icon: Icons.handshake_outlined,
-                label: 'LEND/BORROW',
-                isActive: false,
-              ),
-              _NavItem(icon: Icons.person, label: 'PROFILE', isActive: true),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {},
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 24.sp,
-            color: isActive ? const Color(0xFF2E9E5C) : const Color(0xFF999999),
-          ),
-          SizedBox(height: 3.h),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 9.sp,
-              fontWeight: FontWeight.w600,
-              color: isActive
-                  ? const Color(0xFF2E9E5C)
-                  : const Color(0xFF999999),
-              letterSpacing: 0.3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

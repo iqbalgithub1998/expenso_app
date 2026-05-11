@@ -1,57 +1,24 @@
+import 'package:expenso/controllers/add_expense_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 
-class AddExpenseScreen extends StatefulWidget {
+/// Stateless Add-Expense sheet.
+/// All mutable state lives in [AddExpenseController].
+class AddExpenseScreen extends StatelessWidget {
   const AddExpenseScreen({super.key});
 
   @override
-  State<AddExpenseScreen> createState() => _AddExpenseScreenState();
-}
-
-class _AddExpenseScreenState extends State<AddExpenseScreen>
-    with SingleTickerProviderStateMixin {
-  int _selectedCategoryIndex = 0;
-  final TextEditingController _noteController = TextEditingController();
-  final TextEditingController _amountController =
-      TextEditingController(text: '120.00');
-  late AnimationController _cursorAnimController;
-  late Animation<double> _cursorOpacity;
-
-  final List<_CategoryItem> _categories = [
-    _CategoryItem(label: 'Food', icon: Icons.restaurant_outlined),
-    _CategoryItem(label: 'Shop', icon: Icons.shopping_bag_outlined),
-    _CategoryItem(label: 'Travel', icon: Icons.directions_car_outlined),
-    _CategoryItem(label: 'Fun', icon: Icons.movie_filter_outlined),
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _cursorAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    )..repeat(reverse: true);
-    _cursorOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _cursorAnimController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _cursorAnimController.dispose();
-    _noteController.dispose();
-    _amountController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // Lazily put so the controller is scoped to this sheet's lifetime.
+    final c = Get.put(AddExpenseController());
+
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F8),
       body: SafeArea(
         child: Column(
           children: [
-            // ── App Bar ──────────────────────────────────────────────────
+            // ── App Bar ────────────────────────────────────────────────────
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
               child: Row(
@@ -85,11 +52,35 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
                       color: const Color(0xFF1A1A1A),
                     ),
                   ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Get.back(),
+                    child: Container(
+                      width: 36.w,
+                      height: 36.h,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 18.sp,
+                        color: const Color(0xFF555566),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
 
-            // ── Scrollable Body ──────────────────────────────────────────
+            // ── Scrollable Body ────────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(horizontal: 20.w),
@@ -98,7 +89,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
                   children: [
                     SizedBox(height: 12.h),
 
-                    // ── Amount Section ─────────────────────────────────
+                    // ── Amount Display ─────────────────────────────────────
                     Center(
                       child: Column(
                         children: [
@@ -111,53 +102,46 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
                             ),
                           ),
                           SizedBox(height: 16.h),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                '\$',
-                                style: TextStyle(
-                                  fontSize: 28.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF2E9E5C),
-                                ),
-                              ),
-                              SizedBox(width: 4.w),
-                              Text(
-                                _amountController.text,
-                                style: TextStyle(
-                                  fontSize: 52.sp,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF1A1A1A),
-                                  letterSpacing: -1,
-                                ),
-                              ),
-                              SizedBox(width: 4.w),
-                              // Blinking cursor
-                              AnimatedBuilder(
-                                animation: _cursorOpacity,
-                                builder: (context, _) => Opacity(
-                                  opacity: _cursorOpacity.value,
-                                  child: Container(
-                                    width: 3.w,
-                                    height: 48.h,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF2E9E5C),
-                                      borderRadius: BorderRadius.circular(2.r),
-                                    ),
+                          Obx(
+                            () => Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '\$',
+                                  style: TextStyle(
+                                    fontSize: 28.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF2E9E5C),
                                   ),
                                 ),
-                              ),
-                            ],
+                                SizedBox(width: 4.w),
+                                Text(
+                                  c.formattedAmount,
+                                  style: TextStyle(
+                                    fontSize: 52.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF1A1A1A),
+                                    letterSpacing: -1,
+                                  ),
+                                ),
+                                SizedBox(width: 4.w),
+                                _BlinkingCursor(),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
 
-                    SizedBox(height: 32.h),
+                    SizedBox(height: 24.h),
 
-                    // ── Category Section ───────────────────────────────
+                    // ── Numpad ─────────────────────────────────────────────
+                    _Numpad(controller: c),
+
+                    SizedBox(height: 28.h),
+
+                    // ── Category ───────────────────────────────────────────
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -186,47 +170,51 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
                     ),
                     SizedBox(height: 16.h),
 
-                    // Category chips row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: List.generate(_categories.length, (index) {
-                        final isSelected = _selectedCategoryIndex == index;
-                        return Padding(
-                          padding: EdgeInsets.only(right: 14.w),
-                          child: GestureDetector(
-                            onTap: () =>
-                                setState(() => _selectedCategoryIndex = index),
-                            child: _CategoryChip(
-                              item: _categories[index],
-                              isSelected: isSelected,
+                    Obx(
+                      () => Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: List.generate(c.categories.length, (index) {
+                          return Padding(
+                            padding: EdgeInsets.only(right: 14.w),
+                            child: GestureDetector(
+                              onTap: () => c.selectCategory(index),
+                              child: _CategoryChip(
+                                item: c.categories[index],
+                                isSelected:
+                                    c.selectedCategoryIndex.value == index,
+                              ),
                             ),
-                          ),
-                        );
-                      }),
+                          );
+                        }),
+                      ),
                     ),
 
                     SizedBox(height: 28.h),
 
-                    // ── Date & Wallet Row ──────────────────────────────
+                    // ── Date & Wallet ──────────────────────────────────────
                     Row(
                       children: [
                         Expanded(
-                          child: _InfoCard(
-                            iconColor: const Color(0xFF2E9E5C),
-                            icon: Icons.calendar_today_outlined,
-                            label: 'DATE',
-                            value: 'Today, 24 Oct',
-                            onTap: () {},
+                          child: Obx(
+                            () => _InfoCard(
+                              iconColor: const Color(0xFF2E9E5C),
+                              icon: Icons.calendar_today_outlined,
+                              label: 'DATE',
+                              value: c.formattedDate,
+                              onTap: () => c.pickDate(context),
+                            ),
                           ),
                         ),
                         SizedBox(width: 14.w),
                         Expanded(
-                          child: _InfoCard(
-                            iconColor: const Color(0xFFCC8833),
-                            icon: Icons.account_balance_outlined,
-                            label: 'WALLET',
-                            value: 'Main Savings',
-                            onTap: () {},
+                          child: Obx(
+                            () => _InfoCard(
+                              iconColor: const Color(0xFFCC8833),
+                              icon: Icons.account_balance_outlined,
+                              label: 'WALLET',
+                              value: c.selectedWallet.value,
+                              onTap: () => _showWalletPicker(context, c),
+                            ),
                           ),
                         ),
                       ],
@@ -234,7 +222,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
 
                     SizedBox(height: 20.h),
 
-                    // ── Note Field ─────────────────────────────────────
+                    // ── Note ──────────────────────────────────────────────
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -248,7 +236,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
                         ],
                       ),
                       child: TextField(
-                        controller: _noteController,
+                        controller: c.noteController,
+                        onChanged: (v) => c.note.value = v,
                         style: TextStyle(
                           fontSize: 14.sp,
                           color: const Color(0xFF1A1A1A),
@@ -279,48 +268,69 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
               ),
             ),
 
-            // ── Save Button (pinned at bottom) ───────────────────────────
+            // ── Save Button ────────────────────────────────────────────────
             Padding(
               padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 24.h),
-              child: GestureDetector(
-                onTap: () {},
-                child: Container(
-                  width: double.infinity,
-                  height: 58.h,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF1B7A47), Color(0xFF38C068)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
-                    borderRadius: BorderRadius.circular(30.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF2E9E5C).withValues(alpha: 0.4),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
+              child: Obx(
+                () => GestureDetector(
+                  onTap: c.isSaving.value ? null : c.saveTransaction,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: double.infinity,
+                    height: 58.h,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: c.isSaving.value
+                            ? [
+                                const Color(0xFF1B7A47).withValues(alpha: 0.6),
+                                const Color(0xFF38C068).withValues(alpha: 0.6),
+                              ]
+                            : [
+                                const Color(0xFF1B7A47),
+                                const Color(0xFF38C068),
+                              ],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        color: Colors.white,
-                        size: 22.sp,
-                      ),
-                      SizedBox(width: 10.w),
-                      Text(
-                        'Save Transaction',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.3,
+                      borderRadius: BorderRadius.circular(30.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2E9E5C).withValues(alpha: 0.4),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (c.isSaving.value)
+                          SizedBox(
+                            width: 20.w,
+                            height: 20.h,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          )
+                        else
+                          Icon(
+                            Icons.check_circle_outline,
+                            color: Colors.white,
+                            size: 22.sp,
+                          ),
+                        SizedBox(width: 10.w),
+                        Text(
+                          c.isSaving.value ? 'Saving...' : 'Save Transaction',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -330,21 +340,199 @@ class _AddExpenseScreenState extends State<AddExpenseScreen>
       ),
     );
   }
+
+  void _showWalletPicker(BuildContext context, AddExpenseController c) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (_) => Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 20.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Select Wallet',
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF1A1A1A),
+              ),
+            ),
+            SizedBox(height: 16.h),
+            ...c.wallets.map(
+              (w) => Obx(
+                () => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    w,
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  trailing: c.selectedWallet.value == w
+                      ? Icon(
+                          Icons.check_circle_rounded,
+                          color: const Color(0xFF2E9E5C),
+                          size: 20.sp,
+                        )
+                      : null,
+                  onTap: () {
+                    c.selectWallet(w);
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+            ),
+            SizedBox(height: 8.h),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-// ── Category Data Model ────────────────────────────────────────────────────────
-
-class _CategoryItem {
-  final String label;
-  final IconData icon;
-
-  const _CategoryItem({required this.label, required this.icon});
+// ─────────────────────────────────────────────────────────────────────────────
+// Blinking Cursor (replaces AnimationController in StatefulWidget)
+// ─────────────────────────────────────────────────────────────────────────────
+class _BlinkingCursor extends StatefulWidget {
+  @override
+  State<_BlinkingCursor> createState() => _BlinkingCursorState();
 }
 
-// ── Category Chip Widget ───────────────────────────────────────────────────────
+class _BlinkingCursorState extends State<_BlinkingCursor>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _opacity;
 
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _opacity,
+      builder: (_, __) => Opacity(
+        opacity: _opacity.value,
+        child: Container(
+          width: 3.w,
+          height: 48.h,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2E9E5C),
+            borderRadius: BorderRadius.circular(2.r),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Numpad
+// ─────────────────────────────────────────────────────────────────────────────
+class _Numpad extends StatelessWidget {
+  final AddExpenseController controller;
+  const _Numpad({required this.controller});
+
+  static const _keys = [
+    ['1', '2', '3'],
+    ['4', '5', '6'],
+    ['7', '8', '9'],
+    ['.', '0', '⌫'],
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(12.w),
+      child: Column(
+        children: _keys.map((row) {
+          return Row(
+            children: row.map((key) {
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (key == '⌫') {
+                      controller.deleteDigit();
+                    } else if (key == '.') {
+                      controller.appendDecimal();
+                    } else {
+                      controller.appendDigit(key);
+                    }
+                  },
+                  child: Container(
+                    margin: EdgeInsets.all(4.w),
+                    height: 52.h,
+                    decoration: BoxDecoration(
+                      color: key == '⌫'
+                          ? const Color(0xFFFFEEEE)
+                          : const Color(0xFFF5F6FA),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Center(
+                      child: key == '⌫'
+                          ? Icon(
+                              Icons.backspace_outlined,
+                              size: 18.sp,
+                              color: const Color(0xFFFF5252),
+                            )
+                          : Text(
+                              key,
+                              style: TextStyle(
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF1A1A1A),
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Category Chip
+// ─────────────────────────────────────────────────────────────────────────────
 class _CategoryChip extends StatelessWidget {
-  final _CategoryItem item;
+  final CategoryItem item;
   final bool isSelected;
 
   const _CategoryChip({required this.item, required this.isSelected});
@@ -354,34 +542,12 @@ class _CategoryChip extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
-      width: 72.w,
-      padding: EdgeInsets.symmetric(vertical: 12.h),
-      decoration: BoxDecoration(
-        gradient: isSelected
-            ? const LinearGradient(
-                colors: [Color(0xFF7C3AED), Color(0xFFAB65F5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : null,
-        color: isSelected ? null : const Color(0xFFE8E8EE),
-        shape: BoxShape.circle,
-        boxShadow: isSelected
-            ? [
-                BoxShadow(
-                  color: const Color(0xFF7C3AED).withValues(alpha: 0.35),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : [],
-      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 72.w,
-            height: 72.w,
+            width: 64.w,
+            height: 64.w,
             decoration: BoxDecoration(
               gradient: isSelected
                   ? const LinearGradient(
@@ -392,6 +558,15 @@ class _CategoryChip extends StatelessWidget {
                   : null,
               color: isSelected ? null : const Color(0xFFE8E8EE),
               shape: BoxShape.circle,
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF7C3AED).withValues(alpha: 0.35),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : [],
             ),
             child: Icon(
               item.icon,
@@ -405,7 +580,9 @@ class _CategoryChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 12.sp,
               fontWeight: FontWeight.w600,
-              color: isSelected ? const Color(0xFF7C3AED) : const Color(0xFF555566),
+              color: isSelected
+                  ? const Color(0xFF7C3AED)
+                  : const Color(0xFF555566),
             ),
           ),
         ],
@@ -414,8 +591,9 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
-// ── Info Card (Date / Wallet) ──────────────────────────────────────────────────
-
+// ─────────────────────────────────────────────────────────────────────────────
+// Info Card (Date / Wallet)
+// ─────────────────────────────────────────────────────────────────────────────
 class _InfoCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
