@@ -1,20 +1,30 @@
+import 'package:expenso/controllers/profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 
-class ProfileScreen extends StatefulWidget {
+// ── Theme Constants ────────────────────────────────────────────────────────────
+
+const _bg = Color(0xFF0D0F14);
+const _surface = Color(0xFF151820);
+const _surface2 = Color(0xFF1C1F28);
+const _border = Color(0xFF252830);
+const _textPrimary = Color(0xFFEEEFF4);
+const _textSecondary = Color(0xFF6B7280);
+const _green = Color(0xFF2E9E5C);
+const _greenDim = Color(0xFF1B7A47);
+
+// ── Screen ─────────────────────────────────────────────────────────────────────
+
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  bool _pushNotifications = true;
-
-  @override
   Widget build(BuildContext context) {
+    final controller = Get.put(ProfileController());
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F8),
+      backgroundColor: _bg,
       body: SafeArea(
         child: Column(
           children: [
@@ -30,7 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: 40.w,
                         height: 40.h,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF2E9E5C),
+                          color: _green,
                           borderRadius: BorderRadius.circular(12.r),
                         ),
                         child: Icon(
@@ -45,30 +55,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         style: TextStyle(
                           fontSize: 22.sp,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1A1A1A),
+                          color: _textPrimary,
                         ),
                       ),
                     ],
-                  ),
-                  Container(
-                    width: 40.w,
-                    height: 40.h,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.notifications_outlined,
-                      color: const Color(0xFF1A1A1A),
-                      size: 20.sp,
-                    ),
                   ),
                 ],
               ),
@@ -87,71 +77,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       clipBehavior: Clip.none,
                       alignment: Alignment.center,
                       children: [
-                        // Outer glow ring
                         Container(
                           width: 120.w,
                           height: 120.w,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFF2E9E5C),
-                              width: 3,
-                            ),
+                            border: Border.all(color: _green, width: 3),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(
-                                  0xFF2E9E5C,
-                                ).withValues(alpha: 0.25),
+                                color: _green.withValues(alpha: 0.20),
                                 blurRadius: 16,
                                 spreadRadius: 2,
                               ),
                             ],
                           ),
                         ),
-                        // Avatar container
                         Container(
                           width: 112.w,
                           height: 112.w,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF5DEB3),
+                          decoration: const BoxDecoration(
+                            color: _surface2,
                             shape: BoxShape.circle,
                           ),
                           child: ClipOval(
                             child: Icon(
                               Icons.person,
                               size: 72.sp,
-                              color: const Color(0xFFD4A574),
+                              color: _textSecondary,
                             ),
                           ),
                         ),
-                        // Edit badge
                         Positioned(
                           right: 0,
                           bottom: 0,
                           child: GestureDetector(
-                            onTap: () {},
+                            onTap: controller.onEditAvatar,
                             child: Container(
                               width: 34.w,
                               height: 34.w,
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF7C3AED),
-                                    Color(0xFFAB65F5),
-                                  ],
+                                  colors: [_greenDim, _green],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
                                 shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFFF2F4F8),
-                                  width: 2.5,
-                                ),
+                                border: Border.all(color: _bg, width: 2.5),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(
-                                      0xFF7C3AED,
-                                    ).withValues(alpha: 0.4),
+                                    color: _green.withValues(alpha: 0.35),
                                     blurRadius: 8,
                                     offset: const Offset(0, 3),
                                   ),
@@ -176,7 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: TextStyle(
                         fontSize: 26.sp,
                         fontWeight: FontWeight.w900,
-                        color: const Color(0xFF1A1A1A),
+                        color: _textPrimary,
                         letterSpacing: -0.3,
                       ),
                     ),
@@ -185,7 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       'Premium Member Since 2022',
                       style: TextStyle(
                         fontSize: 13.sp,
-                        color: const Color(0xFF888888),
+                        color: _textSecondary,
                         fontWeight: FontWeight.w400,
                       ),
                     ),
@@ -200,24 +174,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         style: TextStyle(
                           fontSize: 20.sp,
                           fontWeight: FontWeight.w800,
-                          color: const Color(0xFF1A1A1A),
+                          color: _textPrimary,
                         ),
                       ),
                     ),
                     SizedBox(height: 12.h),
 
-                    // Preferences card
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: _surface,
                         borderRadius: BorderRadius.circular(20.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
+                        border: Border.all(color: _border),
                       ),
                       child: Column(
                         children: [
@@ -231,8 +198,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               children: [
                                 _PrefIcon(
                                   icon: Icons.notifications_active_outlined,
-                                  bg: const Color(0xFFE8E8EE),
-                                  color: const Color(0xFF555566),
+                                  bg: _surface2,
+                                  color: _textSecondary,
                                 ),
                                 SizedBox(width: 14.w),
                                 Expanded(
@@ -245,7 +212,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         style: TextStyle(
                                           fontSize: 14.sp,
                                           fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF1A1A1A),
+                                          color: _textPrimary,
                                         ),
                                       ),
                                       SizedBox(height: 2.h),
@@ -253,20 +220,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         'Alerts for unusual spending',
                                         style: TextStyle(
                                           fontSize: 11.sp,
-                                          color: const Color(0xFF999999),
+                                          color: _textSecondary,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                Switch(
-                                  value: _pushNotifications,
-                                  onChanged: (v) =>
-                                      setState(() => _pushNotifications = v),
-                                  activeThumbColor: Colors.white,
-                                  activeTrackColor: const Color(0xFF2E9E5C),
-                                  inactiveThumbColor: Colors.white,
-                                  inactiveTrackColor: const Color(0xFFCCCCCC),
+                                Obx(
+                                  () => Switch(
+                                    value: controller.pushNotifications.value,
+                                    onChanged:
+                                        controller.togglePushNotifications,
+                                    activeThumbColor: Colors.white,
+                                    activeTrackColor: _green,
+                                    inactiveThumbColor: _textSecondary,
+                                    inactiveTrackColor: _surface2,
+                                  ),
                                 ),
                               ],
                             ),
@@ -274,26 +243,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                           _Divider(),
 
-                          // Language
                           _PrefRow(
                             icon: Icons.language_outlined,
-                            iconBg: const Color(0xFFE8E8EE),
-                            iconColor: const Color(0xFF555566),
+                            iconBg: _surface2,
+                            iconColor: _textSecondary,
                             title: 'Language',
                             subtitle: 'English (US)',
-                            onTap: () {},
+                            onTap: controller.onLanguageTap,
                           ),
 
                           _Divider(),
 
-                          // Currency
                           _PrefRow(
                             icon: Icons.monetization_on_outlined,
-                            iconBg: const Color(0xFFE8E8EE),
-                            iconColor: const Color(0xFF555566),
+                            iconBg: _surface2,
+                            iconColor: _textSecondary,
                             title: 'Currency',
                             subtitle: 'USD (\$)',
-                            onTap: () {},
+                            onTap: controller.onCurrencyTap,
                           ),
                         ],
                       ),
@@ -303,17 +270,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     // ── Logout Button ──────────────────────────────────
                     GestureDetector(
-                      onTap: () {},
+                      onTap: controller.onLogout,
                       child: Container(
                         width: double.infinity,
                         height: 56.h,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: _surface,
                           borderRadius: BorderRadius.circular(30.r),
                           border: Border.all(
                             color: const Color(0xFFE53935),
                             width: 1.5,
-                            style: BorderStyle.solid,
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -351,10 +317,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     // ── Version ────────────────────────────────────────
                     Text(
-                      'APP VERSION 4.8.2 (2024)',
+                      'APP VERSION 4.8.2 (2026)',
                       style: TextStyle(
                         fontSize: 11.sp,
-                        color: const Color(0xFFBBBBBB),
+                        color: _textSecondary,
                         letterSpacing: 1.0,
                         fontWeight: FontWeight.w500,
                       ),
@@ -389,6 +355,7 @@ class _PrefIcon extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: _border),
       ),
       child: Icon(icon, size: 20.sp, color: color),
     );
@@ -433,25 +400,18 @@ class _PrefRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A1A1A),
+                      color: _textPrimary,
                     ),
                   ),
                   SizedBox(height: 2.h),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      color: const Color(0xFF999999),
-                    ),
+                    style: TextStyle(fontSize: 11.sp, color: _textSecondary),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              size: 20.sp,
-              color: const Color(0xFFCCCCCC),
-            ),
+            Icon(Icons.chevron_right, size: 20.sp, color: _border),
           ],
         ),
       ),
@@ -466,8 +426,7 @@ class _Divider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
-      child: Container(height: 1, color: const Color(0xFFF0F0F0)),
+      child: Container(height: 1, color: _border),
     );
   }
 }
-

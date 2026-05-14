@@ -18,6 +18,7 @@ dependencies:
   get_storage: ^2.1.1
   flutter_screenutil: ^5.9.3
   connectivity_plus: ^7.0.0
+  hugeicons: ^1.1.7
 
 dev_dependencies:
   flutter_test:

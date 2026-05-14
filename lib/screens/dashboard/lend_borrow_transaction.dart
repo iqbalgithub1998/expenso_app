@@ -1,4 +1,5 @@
 import 'package:expenso/controllers/lend_borrow_controller.dart';
+import 'package:expenso/screens/dashboard/record_transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -582,7 +583,7 @@ class _NewTxFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _showNewTxSheet(context, contact),
+      onTap: () => Get.to(() => RecordTransactionScreen()),
       child: Container(
         height: 52.h,
         padding: EdgeInsets.symmetric(horizontal: 22.w),

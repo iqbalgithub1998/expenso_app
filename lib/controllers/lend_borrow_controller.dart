@@ -1,4 +1,7 @@
+import 'package:expenso/screens/dashboard/lend_borrow.dart';
+import 'package:expenso/screens/dashboard/lend_borrow_transaction.dart';
 import 'package:expenso/screens/dashboard/manage_contact_screen.dart';
+import 'package:expenso/screens/dashboard/record_transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -261,7 +264,9 @@ class LendBorrowController extends GetxController {
 
   void onViewAllMovementsTap() {}
 
-  void onAddFabTap() {}
+  void onAddFabTap() {
+    Get.to(() => RecordTransactionScreen());
+  }
 
   // ── Manage Contacts ────────────────────────────────────────────────────────
 
@@ -383,6 +388,20 @@ class LendBorrowController extends GetxController {
           .toList();
     }
     return list;
+  }
+
+  void onViewLedgerTap() {
+    Get.to(
+      () => LendBorrowTransaction(
+        contact: ContactData(
+          name: 'Sarah Jenkins',
+          initials: 'SJ',
+          phone: '+1 555 001 0001',
+          amount: 850.00,
+          status: ContactFilter.lent,
+        ),
+      ),
+    );
   }
 
   void initContactsPage() {

@@ -63,20 +63,12 @@ class LendBorrowScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Expenso',
+                                  'Lend & Borrow',
                                   style: TextStyle(
                                     fontSize: 20.sp,
                                     fontWeight: FontWeight.w800,
                                     color: Colors.white,
                                     letterSpacing: -0.5,
-                                  ),
-                                ),
-                                Text(
-                                  'Lend & Borrow',
-                                  style: TextStyle(
-                                    fontSize: 11.sp,
-                                    color: const Color(0xFF6B7280),
-                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
@@ -182,6 +174,7 @@ class LendBorrowScreen extends StatelessWidget {
                             amountColor: const Color(0xFFE53935),
                             subLabel: 'Due in 2 days',
                             subColor: const Color(0xFFE53935),
+                            onTap: controller.onViewLedgerTap,
                           ),
                         ),
                         SizedBox(width: 14.w),
@@ -192,6 +185,7 @@ class LendBorrowScreen extends StatelessWidget {
                             amountColor: const Color(0xFF1A1A1A),
                             subLabel: 'Paid 60%',
                             subColor: const Color(0xFF2E9E5C),
+                            onTap: controller.onViewLedgerTap,
                           ),
                         ),
                       ],
@@ -595,6 +589,7 @@ class _MiniLedgerCard extends StatelessWidget {
   final Color amountColor;
   final String subLabel;
   final Color subColor;
+  final VoidCallback? onTap;
 
   const _MiniLedgerCard({
     super.key,
@@ -603,63 +598,67 @@ class _MiniLedgerCard extends StatelessWidget {
     required this.amountColor,
     required this.subLabel,
     required this.subColor,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.person_outline,
-                size: 16.sp,
-                color: const Color(0xFF888888),
-              ),
-              SizedBox(width: 5.w),
-              Text(
-                name,
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF555566),
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.person_outline,
+                  size: 16.sp,
+                  color: const Color(0xFF888888),
                 ),
+                SizedBox(width: 5.w),
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF555566),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              amount,
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: amountColor,
               ),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          Text(
-            amount,
-            style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.bold,
-              color: amountColor,
             ),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            subLabel,
-            style: TextStyle(
-              fontSize: 11.sp,
-              color: subColor,
-              fontWeight: FontWeight.w500,
+            SizedBox(height: 4.h),
+            Text(
+              subLabel,
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: subColor,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -673,103 +672,107 @@ class _FeaturedLedgerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(20.w),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEDE9FE),
-        borderRadius: BorderRadius.circular(22.r),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7C3AED).withValues(alpha: 0.12),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -10,
-            bottom: -10,
-            child: Icon(
-              Icons.handshake_outlined,
-              size: 100.sp,
-              color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
+    final controller = Get.find<LendBorrowController>();
+    return InkWell(
+      onTap: controller.onViewLedgerTap,
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEDE9FE),
+          borderRadius: BorderRadius.circular(22.r),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF7C3AED).withValues(alpha: 0.12),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 52.w,
-                    height: 52.w,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
-                        width: 2,
-                      ),
-                      color: const Color(0xFFD8B4FE),
-                    ),
-                    child: ClipOval(
-                      child: Icon(
-                        Icons.person,
-                        size: 32.sp,
-                        color: const Color(0xFF7C3AED),
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 12.w,
-                      vertical: 6.h,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF7C3AED), Color(0xFFAB65F5)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20.r),
-                    ),
-                    child: Text(
-                      'OVERDUE',
-                      style: TextStyle(
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ),
-                ],
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -10,
+              bottom: -10,
+              child: Icon(
+                Icons.handshake_outlined,
+                size: 100.sp,
+                color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
               ),
-              SizedBox(height: 14.h),
-              Text(
-                'Sarah Jenkins',
-                style: TextStyle(
-                  fontSize: 22.sp,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF5B21B6),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 52.w,
+                      height: 52.w,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
+                          width: 2,
+                        ),
+                        color: const Color(0xFFD8B4FE),
+                      ),
+                      child: ClipOval(
+                        child: Icon(
+                          Icons.person,
+                          size: 32.sp,
+                          color: const Color(0xFF7C3AED),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 6.h,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF7C3AED), Color(0xFFAB65F5)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20.r),
+                      ),
+                      child: Text(
+                        'OVERDUE',
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(height: 4.h),
-              Text(
-                'Lent: \$850.00',
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: const Color(0xFF7C3AED),
-                  fontWeight: FontWeight.w500,
+                SizedBox(height: 14.h),
+                Text(
+                  'Sarah Jenkins',
+                  style: TextStyle(
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF5B21B6),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                SizedBox(height: 4.h),
+                Text(
+                  'Lent: \$850.00',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: const Color(0xFF7C3AED),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

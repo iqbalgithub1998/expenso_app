@@ -1,3 +1,4 @@
+import 'package:expenso/screens/dashboard/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -44,9 +45,10 @@ class AuthController extends GetxController {
   }
 
   void onLoginPressed() {
-    if (loginFormKey.currentState!.validate()) {
-      // TODO: Implement Supabase login
-    }
+    Get.to(() => DashboardScreen());
+    // if (loginFormKey.currentState!.validate()) {
+    //   // TODO: Implement Supabase login
+    // }
   }
 
   void onRegisterPressed() {
