@@ -12,15 +12,5 @@ class AuthRepository extends GetxController {
     initializeApp();
   }
 
-  Future<void> initializeApp() async {
-    // final String data = await AuthController.instance.initAuthUser();
-
-    // if (data == "User") {
-    //   Get.offAll(() => DashboardScreen());
-    // } else {
-    //   print("No User");
-
-    //   Get.offAll(() => LoginScreen());
-    // }
-  }
+  Future<void> initializeApp() async {}
 }

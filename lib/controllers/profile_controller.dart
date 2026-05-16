@@ -1,4 +1,6 @@
+import 'package:expenso/screens/auth/auth_screen.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileController extends GetxController {
   final pushNotifications = true.obs;
@@ -19,7 +21,8 @@ class ProfileController extends GetxController {
     // TODO: implement currency selection
   }
 
-  void onLogout() {
-    // TODO: implement logout
+  Future<void> onLogout() async {
+    await Supabase.instance.client.auth.signOut();
+    Get.offAll(() => const AuthScreen());
   }
 }

@@ -1,4 +1,5 @@
 import 'package:expenso/controllers/auth_controller.dart';
+import 'package:expenso/utils/validator/validators.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -355,11 +356,7 @@ class AuthScreen extends StatelessWidget {
             hint: 'name@example.com',
             prefixIcon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Please enter your email';
-              if (!GetUtils.isEmail(v)) return 'Enter a valid email';
-              return null;
-            },
+            validator: Validators.email,
           ),
           SizedBox(height: 20.h),
           Row(
@@ -403,9 +400,12 @@ class AuthScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: 28.h),
-          _buildPrimaryButton(
-            label: 'Continue to Dashboard',
-            onPressed: controller.onLoginPressed,
+          Obx(
+            () => _buildPrimaryButton(
+              label: controller.isLoading.value ? 'Logging in...' : 'Continue to Dashboard',
+              onPressed: controller.isLoading.value ? () {} : controller.onLoginPressed,
+              isLoading: controller.isLoading.value,
+            ),
           ),
           SizedBox(height: 24.h),
           _buildOrDivider(),
@@ -434,11 +434,7 @@ class AuthScreen extends StatelessWidget {
             hint: 'John Doe',
             prefixIcon: Icons.person_outline_rounded,
             keyboardType: TextInputType.name,
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Please enter your name';
-              if (v.length < 2) return 'Min 2 characters';
-              return null;
-            },
+            validator: Validators.name,
           ),
           SizedBox(height: 20.h),
           _buildFieldLabel('Phone Number'),
@@ -448,11 +444,7 @@ class AuthScreen extends StatelessWidget {
             hint: '9876543210',
             prefixIcon: Icons.phone_outlined,
             keyboardType: TextInputType.phone,
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Please enter phone number';
-              if (!GetUtils.isPhoneNumber(v)) return 'Enter a valid number';
-              return null;
-            },
+            validator: Validators.phone,
           ),
           SizedBox(height: 20.h),
           _buildFieldLabel('Email Address'),
@@ -462,11 +454,7 @@ class AuthScreen extends StatelessWidget {
             hint: 'name@example.com',
             prefixIcon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Please enter your email';
-              if (!GetUtils.isEmail(v)) return 'Enter a valid email';
-              return null;
-            },
+            validator: Validators.email,
           ),
           SizedBox(height: 20.h),
           _buildFieldLabel('Password'),
@@ -487,11 +475,7 @@ class AuthScreen extends StatelessWidget {
                 ),
                 onPressed: controller.toggleRegisterPasswordVisibility,
               ),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Please enter password';
-                if (v.length < 6) return 'Min 6 characters';
-                return null;
-              },
+              validator: Validators.password,
             ),
           ),
           SizedBox(height: 20.h),
@@ -513,19 +497,19 @@ class AuthScreen extends StatelessWidget {
                 ),
                 onPressed: controller.toggleRegisterConfirmPasswordVisibility,
               ),
-              validator: (v) {
-                if (v == null || v.isEmpty) return 'Please confirm password';
-                if (v != controller.registerPassword.text) {
-                  return 'Passwords do not match';
-                }
-                return null;
-              },
+              validator: (value) => Validators.confirmPassword(
+                value,
+                controller.registerPassword.text,
+              ),
             ),
           ),
           SizedBox(height: 28.h),
-          _buildPrimaryButton(
-            label: 'Create Account',
-            onPressed: controller.onRegisterPressed,
+          Obx(
+            () => _buildPrimaryButton(
+              label: controller.isLoading.value ? 'Creating...' : 'Create Account',
+              onPressed: controller.isLoading.value ? () {} : controller.onRegisterPressed,
+              isLoading: controller.isLoading.value,
+            ),
           ),
           SizedBox(height: 24.h),
           _buildOrDivider(),
@@ -566,6 +550,8 @@ class AuthScreen extends StatelessWidget {
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       style: GoogleFonts.poppins(fontSize: 14.sp, color: _textPrimary),
       decoration: InputDecoration(
         hintText: hint,
@@ -603,12 +589,13 @@ class AuthScreen extends StatelessWidget {
   Widget _buildPrimaryButton({
     required String label,
     required VoidCallback onPressed,
+    bool isLoading = false,
   }) {
     return SizedBox(
       width: double.infinity,
       height: 52.h,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: isLoading ? () {} : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: _green,
           foregroundColor: Colors.white,
@@ -618,13 +605,22 @@ class AuthScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(16.r),
           ),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 15.sp,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: isLoading
+            ? SizedBox(
+                width: 24.w,
+                height: 24.w,
+                child: const CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
       ),
     );
   }
