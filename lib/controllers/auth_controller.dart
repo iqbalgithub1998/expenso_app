@@ -1,3 +1,5 @@
+import 'package:expenso/models/user.dart';
+import 'package:expenso/repositories/auth_repository.dart';
 import 'package:expenso/screens/dashboard/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -69,13 +71,13 @@ class AuthController extends GetxController {
         );
         return;
       }
-
-      Get.snackbar(
-        'Success',
-        'Welcome back!',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      final userResponse = await Supabase.instance.client
+          .from('user_profile')
+          .select()
+          .eq('id', authResponse.user!.id)
+          .single();
+      debugPrint(userResponse.toString());
+      AuthRepository.instance.user = UserModel.fromJson(userResponse);
 
       Get.offAll(() => DashboardScreen());
     } catch (e) {
@@ -113,19 +115,17 @@ class AuthController extends GetxController {
         return;
       }
 
-      // Save additional user data in users table
-      await Supabase.instance.client.from('users').insert({
+      final userObj = {
+        'id': authResponse.user!.id,
         'name': registerName.text.trim(),
         'number': registerPhone.text.trim(),
         'email': registerEmail.text.trim(),
-      });
+      };
 
-      Get.snackbar(
-        'Success',
-        'Account created successfully!',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
+      // Save additional user data in users table
+      await Supabase.instance.client.from('user_profile').insert(userObj);
+
+      AuthRepository.instance.user = UserModel.fromJson(userObj);
 
       Get.offAll(() => DashboardScreen());
     } catch (e) {

@@ -1,3 +1,4 @@
+import 'package:expenso/controllers/navigation_controller.dart';
 import 'package:expenso/screens/auth/auth_screen.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -24,5 +25,6 @@ class ProfileController extends GetxController {
   Future<void> onLogout() async {
     await Supabase.instance.client.auth.signOut();
     Get.offAll(() => const AuthScreen());
+    NavigationController.instance.selectedIndex.value = 0;
   }
 }

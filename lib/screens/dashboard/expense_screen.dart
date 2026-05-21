@@ -4,24 +4,56 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-class ExpenseScreen extends StatelessWidget {
-  ExpenseScreen({super.key});
+class ExpenseScreen extends StatefulWidget {
+  const ExpenseScreen({super.key});
+
+  @override
+  State<ExpenseScreen> createState() => _ExpenseScreenState();
+}
+
+class _ExpenseScreenState extends State<ExpenseScreen> with WidgetsBindingObserver {
   final c = Get.put(ExpenseController());
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      c.refreshData();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0D0F14),
       floatingActionButton: _AddFab(
-        onTap: () => Get.to(
-          () => const AddExpenseScreen(),
-          transition: Transition.cupertino,
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeOutCubic,
-        ),
+        onTap: () async {
+          await Get.to(
+            () => const AddExpenseScreen(),
+            transition: Transition.cupertino,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutCubic,
+          );
+        },
       ),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
+        child: RefreshIndicator(
+            color: const Color(0xFF00E676),
+            backgroundColor: const Color(0xFF141720),
+            onRefresh: () async => c.refreshData(),
+            child: CustomScrollView(
+              slivers: [
             // ── App Bar (scrolls away) ─────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
@@ -163,6 +195,16 @@ class ExpenseScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 20.h),
                     Obx(() {
+                      if (c.isLoading.value) {
+                        return const SizedBox(
+                          height: 200,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF00E676),
+                            ),
+                          ),
+                        );
+                      }
                       final entries = c.pagedDayEntries;
                       if (entries.isEmpty) {
                         return _EmptyState();
@@ -186,13 +228,14 @@ class ExpenseScreen extends StatelessWidget {
                           ],
                         ],
                       );
-                    }),
-                    SizedBox(height: 100.h),
-                  ],
+}),
+                      SizedBox(height: 100.h),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

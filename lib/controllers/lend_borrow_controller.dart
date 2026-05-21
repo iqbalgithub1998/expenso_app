@@ -3,6 +3,7 @@ import 'package:expenso/screens/dashboard/lend_borrow_transaction.dart';
 import 'package:expenso/screens/dashboard/manage_contact_screen.dart';
 import 'package:expenso/screens/dashboard/record_transaction.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:get/get.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -453,9 +454,19 @@ class LendBorrowController extends GetxController {
     Get.back();
   }
 
-  void onSyncFromContacts() {
-    // TODO: Request permission + sync device contacts
-    Get.back();
+  void onSyncFromContacts() async {
+    final status = await FlutterContacts.permissions.request(
+      PermissionType.readWrite,
+    );
+    if (status == PermissionStatus.granted) {
+      // Get all contacts (fast - defaults to IDs and display names only)
+      List<Contact> contacts = await FlutterContacts.getAll();
+
+      // Get a specific contact with all properties
+
+      // show bottom sheet with all contact , contact will be displayed in list form with name , phone number and avatar and on tap of any contact it will be selected and bottom sheet will be closed and contact name and phone number will be filled in the text fields above.
+      // search to serch in contant on click on any contact bottom sheet will be closed and contact name and phone number will be filled in the text fields above.
+    }
   }
 
   @override

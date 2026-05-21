@@ -1,71 +1,64 @@
+import 'package:expenso/controllers/expense_controller.dart';
+import 'package:expenso/models/category_items.dart';
+import 'package:expenso/utils/constants.dart';
+import 'package:expenso/utils/popups/loaders.dart';
+import 'package:expenso/utils/snackbar/appsnackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddExpenseController extends GetxController {
-  // ── Amount ────────────────────────────────────────────────────────────────
-  final RxString amount = '0'.obs;
+  // ── Numpad amount ─────────────────────────────────────────────────────────
+  final _raw = ''.obs; // e.g. "1234" or "12.34"
 
-  void appendDigit(String digit) {
-    if (amount.value == '0') {
-      amount.value = digit;
-    } else {
-      amount.value += digit;
+  String get formattedAmount {
+    if (_raw.value.isEmpty) return '0';
+    return _raw.value;
+  }
+
+  void appendDigit(String d) {
+    // max 10 chars total
+    if (_raw.value.length >= 10) return;
+    // only one leading zero before decimal
+    if (_raw.value == '0') {
+      _raw.value = d;
+      return;
     }
+    _raw.value = _raw.value + d;
   }
 
   void appendDecimal() {
-    if (!amount.value.contains('.')) {
-      amount.value += '.';
+    if (_raw.value.contains('.')) return;
+    if (_raw.value.isEmpty) {
+      _raw.value = '0.';
+    } else {
+      _raw.value = '${_raw.value}.';
     }
   }
 
   void deleteDigit() {
-    if (amount.value.length <= 1) {
-      amount.value = '0';
-    } else {
-      amount.value = amount.value.substring(0, amount.value.length - 1);
-    }
+    if (_raw.value.isEmpty) return;
+    _raw.value = _raw.value.substring(0, _raw.value.length - 1);
   }
 
-  String get formattedAmount {
-    if (amount.value.contains('.')) return amount.value;
-    final n = double.tryParse(amount.value);
-    if (n == null) return '0.00';
-    return amount.value;
-  }
+  double get amountValue => double.tryParse(_raw.value) ?? 0.0;
 
-  // ── Category ──────────────────────────────────────────────────────────────
-  final RxInt selectedCategoryIndex = 0.obs;
+  final selectedCategoryIndex = 0.obs;
 
-  void selectCategory(int index) => selectedCategoryIndex.value = index;
-
-  final List<CategoryItem> categories = const [
-    CategoryItem(label: 'Food', icon: Icons.restaurant_outlined),
-    CategoryItem(label: 'Shop', icon: Icons.shopping_bag_outlined),
-    CategoryItem(label: 'Travel', icon: Icons.directions_car_outlined),
-    CategoryItem(label: 'Fun', icon: Icons.movie_filter_outlined),
-  ];
+  void selectCategory(int i) => selectedCategoryIndex.value = i;
 
   CategoryItem get selectedCategory => categories[selectedCategoryIndex.value];
 
-  // ── Note ──────────────────────────────────────────────────────────────────
-  final TextEditingController noteController = TextEditingController();
-  final RxString note = ''.obs;
-
   // ── Date ──────────────────────────────────────────────────────────────────
-  final Rx<DateTime> selectedDate = DateTime.now().obs;
+  final selectedDate = DateTime.now().obs;
 
   String get formattedDate {
-    final now = DateTime.now();
     final d = selectedDate.value;
+    final now = DateTime.now();
     if (d.year == now.year && d.month == now.month && d.day == now.day) {
-      return 'Today, ${_dayMonth(d)}';
+      return 'Today';
     }
-    return _dayMonth(d);
-  }
-
-  String _dayMonth(DateTime d) {
-    const months = [
+    final months = [
       'Jan',
       'Feb',
       'Mar',
@@ -88,12 +81,15 @@ class AddExpenseController extends GetxController {
       initialDate: selectedDate.value,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      builder: (context, child) => Theme(
-        data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
-            primary: Color(0xFF2E9E5C),
-            onPrimary: Colors.white,
+      builder: (ctx, child) => Theme(
+        data: ThemeData.dark().copyWith(
+          colorScheme: const ColorScheme.dark(
+            primary: Color(0xFF00E676),
+            onPrimary: Colors.black,
+            surface: Color(0xFF1A1D26),
+            onSurface: Colors.white,
           ),
+          dialogBackgroundColor: const Color(0xFF141720),
         ),
         child: child!,
       ),
@@ -102,62 +98,78 @@ class AddExpenseController extends GetxController {
   }
 
   // ── Wallet ────────────────────────────────────────────────────────────────
-  final RxString selectedWallet = 'Main Savings'.obs;
+  final wallets = ['Cash', 'Bank Account', 'Credit Card', 'UPI'];
+  final selectedWallet = 'Cash'.obs;
 
-  final List<String> wallets = const [
-    'Main Savings',
-    'Cash',
-    'Credit Card',
-    'Debit Card',
-  ];
+  void selectWallet(String w) => selectedWallet.value = w;
 
-  void selectWallet(String wallet) => selectedWallet.value = wallet;
+  // ── Note ─────────────────────────────────────────────────────────────────
+  final noteController = TextEditingController();
+  final note = ''.obs;
 
-  // ── Save ──────────────────────────────────────────────────────────────────
-  final RxBool isSaving = false.obs;
+  // ── Save ─────────────────────────────────────────────────────────────────
+  final isSaving = false.obs;
 
-  Future<void> saveTransaction() async {
-    if (amount.value == '0' || amount.value.isEmpty) {
-      Get.snackbar(
-        'Invalid Amount',
-        'Please enter a valid amount.',
-        backgroundColor: const Color(0xFF1A1D26),
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
+  Future<void> saveTransaction(BuildContext context) async {
+    if (amountValue <= 0) {
+      TLoaders.errorSnackBar(
+        title: 'Invalid Amount',
+        message: 'Please enter an amount greater than ₹0.',
       );
       return;
     }
 
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    debugPrint(userId);
+    if (userId == null) {
+      TLoaders.errorSnackBar(title: 'Error', message: 'User not logged in.');
+      return;
+    }
+
     isSaving.value = true;
-    // Simulate async save — replace with your actual persistence logic
-    await Future.delayed(const Duration(milliseconds: 600));
-    isSaving.value = false;
 
-    Get.back(); // close bottom sheet
+    try {
+      await Supabase.instance.client.from('expense').insert({
+        'user_id': userId,
+        'amount': amountValue,
+        'category': selectedCategory.label,
+        'date': selectedDate.value.toIso8601String().split('T')[0],
+        'note': note.value,
+      });
 
-    Get.snackbar(
-      'Saved!',
-      '${selectedCategory.label} · \$${formattedAmount}',
-      backgroundColor: const Color(0xFF00C853),
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-      duration: const Duration(seconds: 2),
-    );
+      if (Get.isRegistered<ExpenseController>()) {
+        Get.find<ExpenseController>().addExpenseDirect(
+          category: selectedCategory.label,
+          amount: amountValue,
+          note: note.value,
+          date: selectedDate.value,
+        );
+      }
 
-    _reset();
+      _raw.value = '';
+      noteController.clear();
+      selectedDate.value = DateTime.now();
+      Get.back();
+    } catch (e) {
+      debugPrint(e.toString());
+      Get.snackbar(
+        'Error',
+        'Failed to save transaction. Please try again.',
+        backgroundColor: const Color(0xFF1F1212),
+        colorText: const Color(0xFFFF5252),
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 14,
+      );
+    } finally {
+      isSaving.value = false;
+    }
   }
 
-  void _reset() {
-    amount.value = '0';
-    selectedCategoryIndex.value = 0;
-    selectedDate.value = DateTime.now();
-    selectedWallet.value = 'Main Savings';
-    noteController.clear();
-    note.value = '';
+  @override
+  void onInit() {
+    super.onInit();
+    noteController.addListener(() => note.value = noteController.text);
   }
 
   @override
@@ -165,11 +177,4 @@ class AddExpenseController extends GetxController {
     noteController.dispose();
     super.onClose();
   }
-}
-
-// ── Shared model (used by both controller and view) ───────────────────────────
-class CategoryItem {
-  final String label;
-  final IconData icon;
-  const CategoryItem({required this.label, required this.icon});
 }

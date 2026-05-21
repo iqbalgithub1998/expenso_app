@@ -1,7 +1,5 @@
 import 'package:expenso/bindings/general_binding.dart';
 import 'package:expenso/repositories/auth_repository.dart';
-import 'package:expenso/screens/auth/auth_screen.dart';
-import 'package:expenso/screens/dashboard/dashboard_screen.dart';
 import 'package:expenso/utils/theme/theme.dart';
 import 'package:expenso/utils/supabase_init.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,15 +32,6 @@ Future<void> main() async {
   }
 
   Get.put(AuthRepository());
-
-  //* Check if user is logged in
-  final session = Supabase.instance.client.auth.currentSession;
-  Widget homeScreen;
-  if (session != null) {
-    homeScreen = const DashboardScreen();
-  } else {
-    homeScreen = const AuthScreen();
-  }
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -53,14 +41,12 @@ Future<void> main() async {
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then((
     _,
   ) {
-    runApp(MyApp(homeScreen: homeScreen));
+    runApp(MyApp());
   });
 }
 
 class MyApp extends StatelessWidget {
-  final Widget homeScreen;
-
-  const MyApp({super.key, required this.homeScreen});
+  const MyApp({super.key});
 
   //* This widget is the root of your application.
   @override
@@ -75,7 +61,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         initialBinding: GeneralBindings(),
         // getPages: AppPages.pages,
-        home: homeScreen,
+        home: Center(child: CircularProgressIndicator()),
       ),
     );
     // home: const VideoListingScreen()),

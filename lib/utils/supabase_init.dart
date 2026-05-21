@@ -9,7 +9,8 @@ class SupabaseInitResult {
 
 Future<SupabaseInitResult> initializeSupabase() async {
   try {
-    await Supabase.initialize(url: 'https://', anonKey: 'sb_pub');
+    // await Supabase.initialize(url: 'https://', anonKey: 'sb_pub');
+
     print('✅ Supabase initialized successfully');
     return SupabaseInitResult(success: true);
   } catch (e) {

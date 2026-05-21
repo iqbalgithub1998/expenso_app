@@ -1,6 +1,10 @@
 import 'dart:convert';
 
+import 'package:expenso/core/utils/helper.dart';
+import 'package:expenso/utils/popups/loaders.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 // ── Friends model ─────────────────────────────────────────────────────────────
@@ -35,15 +39,6 @@ class Friends {
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
 enum TransactionType { lend, borrow, settlement }
-
-enum TransactionCategory {
-  dining,
-  shopping,
-  travel,
-  entertainment,
-  health,
-  other,
-}
 
 // ── Controller ────────────────────────────────────────────────────────────────
 
@@ -135,22 +130,193 @@ class RecordTransactionController extends GetxController {
     });
   }
 
-  void onSyncFromContacts() {
-    Get.snackbar(
-      'Contacts',
-      'Phone sync coming soon.',
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 14,
-    );
+  void onSyncFromContacts() async {
+    try {
+      final status = await FlutterContacts.permissions.request(
+        PermissionType.readWrite,
+      );
+      if (status == PermissionStatus.granted) {
+        // Get all contacts with properties and photo
+        List<Contact> contacts = await FlutterContacts.getAll(
+          properties: {ContactProperty.phone},
+        );
+
+        final searchQuery = ''.obs;
+        final filteredContacts = contacts.obs;
+
+        void updateSearch(String q) {
+          searchQuery.value = q;
+          if (q.isEmpty) {
+            filteredContacts.value = contacts;
+          } else {
+            filteredContacts.value = contacts.where((c) {
+              final nameMatch = c.displayName?.toLowerCase().contains(
+                q.toLowerCase(),
+              );
+              final phoneMatch = c.phones.any((p) => p.number.contains(q));
+              return nameMatch == true || phoneMatch == true;
+            }).toList();
+          }
+        }
+
+        Get.bottomSheet(
+          Container(
+            height: Get.height * 0.8,
+            padding: EdgeInsets.only(
+              top: 20.h,
+              left: 20.w,
+              right: 20.w,
+              bottom: 20.h,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFF141720),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+            ),
+            child: Column(
+              children: [
+                // Drag handle
+                Container(
+                  width: 40.w,
+                  height: 4.h,
+                  margin: EdgeInsets.only(bottom: 20.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+                // Title
+                Text(
+                  'Select Contact',
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                // Search Field
+                TextField(
+                  onChanged: updateSearch,
+                  style: TextStyle(color: Colors.white, fontSize: 14.sp),
+                  decoration: InputDecoration(
+                    hintText: 'Search by name or number...',
+                    hintStyle: TextStyle(
+                      color: const Color(0xFF4B5563),
+                      fontSize: 14.sp,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: const Color(0xFF4B5563),
+                      size: 20.sp,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFF0D0F14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14.r),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 14.h),
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                // Contacts List
+                Expanded(
+                  child: Obx(() {
+                    if (filteredContacts.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No contacts found',
+                          style: TextStyle(
+                            color: const Color(0xFF4B5563),
+                            fontSize: 14.sp,
+                          ),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      itemCount: filteredContacts.length,
+                      separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                      itemBuilder: (context, index) {
+                        final contact = filteredContacts[index];
+                        print(contact);
+                        final phone = contact.phones.isNotEmpty
+                            ? contact.phones.first.number
+                            : 'No phone number';
+
+                        return ListTile(
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 14.w,
+                            vertical: 4.h,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.05),
+                            ),
+                          ),
+                          tileColor: const Color(0xFF0D0F14),
+                          leading: CircleAvatar(
+                            radius: 20.r,
+                            backgroundColor: const Color(0xFF2A2D3A),
+
+                            child: contact.photo == null
+                                ? Text(
+                                    (contact.displayName?.isNotEmpty ?? false)
+                                        ? contact.displayName![0].toUpperCase()
+                                        : '?',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14.sp,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          title: Text(
+                            contact.displayName ?? "",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          subtitle: Text(
+                            phone,
+                            style: TextStyle(
+                              color: const Color(0xFF6B7280),
+                              fontSize: 12.sp,
+                            ),
+                          ),
+                          onTap: () {
+                            addNameController.text = contact.displayName ?? "";
+                            addPhoneController.text = phone == 'No phone number'
+                                ? ''
+                                : formatPhoneNumber(phone);
+                            Get.back(); // Close bottom sheet
+                          },
+                        );
+                      },
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+          isScrollControlled: true,
+        );
+      }
+    } catch (e) {
+      print(e);
+      TLoaders.errorSnackBar(
+        title: 'Error',
+        message: 'Failed to load contacts.',
+      );
+    }
   }
 
   // ── Dates ─────────────────────────────────────────────────────────────────
   final transactionDate = Rxn<DateTime>();
   final returnDate = Rxn<DateTime>();
-
-  // ── Categories ────────────────────────────────────────────────────────────
-  final selectedCategories = <TransactionCategory>{}.obs;
 
   // ── Note ─────────────────────────────────────────────────────────────────
   final noteController = TextEditingController();
@@ -194,12 +360,6 @@ class RecordTransactionController extends GetxController {
 
   // ── Actions ───────────────────────────────────────────────────────────────
   void selectType(TransactionType type) => selectedType.value = type;
-
-  void toggleCategory(TransactionCategory cat) {
-    selectedCategories.contains(cat)
-        ? selectedCategories.remove(cat)
-        : selectedCategories.add(cat);
-  }
 
   Future<void> pickTransactionDate(BuildContext context) async {
     final picked = await showDatePicker(

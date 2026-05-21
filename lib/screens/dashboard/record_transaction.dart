@@ -195,15 +195,7 @@ class RecordTransactionScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                      // Category card
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 0),
-                        child: _CategoryCard(
-                          selected: c.selectedCategories,
-                          onToggle: c.toggleCategory,
-                          accentColor: c.accentColor,
-                        ),
-                      ),
+
                       // Note field
                       Padding(
                         padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 0),
@@ -576,7 +568,10 @@ void _showAddContactSheet(BuildContext context, RecordTransactionController c) {
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _AddContactSheet(controller: c),
-  );
+  ).then((_) {
+    c.addNameController.clear();
+    c.addPhoneController.clear();
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1181,7 +1176,7 @@ class _AddContactSheet extends StatelessWidget {
           _DarkTextField(
             controller: c.addPhoneController,
             label: 'Phone Number',
-            hint: 'e.g. +91 98765 43210',
+            hint: 'e.g. 9876543210',
             icon: Icons.phone_outlined,
             iconColor: const Color(0xFFBB86FC),
             keyboardType: TextInputType.phone,
@@ -1391,165 +1386,6 @@ class _DateTile extends StatelessWidget {
               ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Category Card
-// ─────────────────────────────────────────────────────────────────────────────
-class _CategoryCard extends StatelessWidget {
-  final RxSet<TransactionCategory> selected;
-  final void Function(TransactionCategory) onToggle;
-  final Color accentColor;
-
-  const _CategoryCard({
-    required this.selected,
-    required this.onToggle,
-    required this.accentColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cats = [
-      (TransactionCategory.dining, Icons.restaurant_outlined, 'Dining'),
-      (TransactionCategory.shopping, Icons.shopping_bag_outlined, 'Shopping'),
-      (TransactionCategory.travel, Icons.flight_outlined, 'Travel'),
-      (TransactionCategory.entertainment, Icons.tv_outlined, 'Entertain'),
-      (TransactionCategory.health, Icons.favorite_outline_rounded, 'Health'),
-    ];
-
-    return Container(
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: const Color(0xFF141720),
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 4.w,
-                height: 14.h,
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  borderRadius: BorderRadius.circular(2.r),
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Text(
-                'Category & Purpose',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF9CA3AF),
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 14.h),
-          Wrap(
-            spacing: 8.w,
-            runSpacing: 8.h,
-            children: [
-              ...cats.map(
-                (t) => _CategoryPill(
-                  icon: t.$2,
-                  label: t.$3,
-                  selected: selected.contains(t.$1),
-                  accentColor: accentColor,
-                  onTap: () => onToggle(t.$1),
-                ),
-              ),
-              _PlusPill(),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CategoryPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final Color accentColor;
-  final VoidCallback onTap;
-
-  const _CategoryPill({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.accentColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-        decoration: BoxDecoration(
-          color: selected
-              ? accentColor.withValues(alpha: 0.14)
-              : const Color(0xFF1A1D26),
-          borderRadius: BorderRadius.circular(30.r),
-          border: Border.all(
-            color: selected
-                ? accentColor.withValues(alpha: 0.50)
-                : Colors.white.withValues(alpha: 0.07),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 12.sp,
-              color: selected ? accentColor : const Color(0xFF6B7280),
-            ),
-            SizedBox(width: 5.w),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w600,
-                color: selected ? accentColor : const Color(0xFF6B7280),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PlusPill extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        width: 34.w,
-        height: 34.h,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1D26),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Icon(
-          Icons.add_rounded,
-          size: 15.sp,
-          color: const Color(0xFF6B7280),
         ),
       ),
     );
