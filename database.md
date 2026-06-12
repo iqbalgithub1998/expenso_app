@@ -156,3 +156,75 @@ ON friends(owner_id);
 CREATE INDEX idx_friends_linked_user_id
 ON friends(linked_user_id);
 ```
+
+---
+
+# Lend & Borrow Transaction Table
+
+This table stores lend and borrow transaction records linked to a `user_profile` and optionally to a `friends` entry.
+
+## Features
+
+- Linked to `user_profile` via `user_id` (the owner of the transaction).
+- Optionally linked to `friends` via `friend_id` to associate the transaction with a specific friend.
+- Supports three transaction types: `lend`, `borrow`, and `settlement`.
+- `note` is optional — can be used to add remarks.
+- `return_date` is optional — used to track when the amount is expected to be returned.
+- Supports Row Level Security (RLS) so users can only access their own records.
+
+---
+
+# SQL Schema
+
+```sql
+CREATE TYPE lend_borrow_type AS ENUM ('lend', 'borrow', 'settlement');
+
+CREATE TABLE lend_borrow_transaction (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES user_profile(id) ON DELETE CASCADE,
+  friend_id UUID REFERENCES friends(id) ON DELETE SET NULL,
+  amount DECIMAL(10, 2) NOT NULL,
+  note TEXT,
+  when_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  return_date DATE,
+  type lend_borrow_type NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+ALTER TABLE lend_borrow_transaction ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own lend borrow transactions"
+ON lend_borrow_transaction
+FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own lend borrow transactions"
+ON lend_borrow_transaction
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own lend borrow transactions"
+ON lend_borrow_transaction
+FOR UPDATE
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own lend borrow transactions"
+ON lend_borrow_transaction
+FOR DELETE
+USING (auth.uid() = user_id);
+
+CREATE INDEX idx_lend_borrow_user_id
+ON lend_borrow_transaction(user_id);
+
+CREATE INDEX idx_lend_borrow_friend_id
+ON lend_borrow_transaction(friend_id);
+
+CREATE INDEX idx_lend_borrow_type
+ON lend_borrow_transaction(type);
+
+CREATE INDEX idx_lend_borrow_return_date
+ON lend_borrow_transaction(return_date);
+
+CREATE INDEX idx_lend_borrow_when_date
+ON lend_borrow_transaction(when_date);
+```

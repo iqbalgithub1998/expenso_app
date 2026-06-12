@@ -1,4 +1,5 @@
 import 'package:expenso/controllers/lend_borrow_controller.dart';
+import 'package:expenso/models/friend.dart';
 import 'package:expenso/screens/dashboard/lend_borrow_transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -18,8 +19,6 @@ class ManageContactsScreen extends StatelessWidget {
   static const _textPrimary = Colors.white;
   static const _textSecondary = Color(0xFF9CA3AF);
   static const _textMuted = Color(0xFF4B5563);
-  static const _accent = Color(0xFF00E676);
-  static const _accentDark = Color(0xFF00A854);
 
   @override
   Widget build(BuildContext context) {
@@ -175,18 +174,18 @@ class ManageContactsScreen extends StatelessWidget {
                     horizontal: 20.w,
                   ).copyWith(bottom: 110.h),
                   itemCount:
-                      c.displayedContacts.length +
+                      c.displayedFriends.length +
                       (c.isLoadingMore.value ? 1 : 0),
                   separatorBuilder: (_, __) => SizedBox(height: 12.h),
                   itemBuilder: (context, index) {
-                    if (index == c.displayedContacts.length) {
+                    if (index == c.displayedFriends.length) {
                       return _LoadingTile();
                     }
                     return _ContactTile(
-                      contact: c.displayedContacts[index],
+                      contact: c.displayedFriends[index],
                       onTap: () => Get.to(
                         () => LendBorrowTransaction(
-                          contact: c.displayedContacts[index],
+                          contact: c.displayedFriends[index],
                         ),
                       ),
                     );
@@ -272,7 +271,7 @@ class _FilterChip extends StatelessWidget {
 // Contact Tile  — dark card matching _LedgerCard / _MovementTile style
 // ─────────────────────────────────────────────────────────────────────────────
 class _ContactTile extends StatelessWidget {
-  final ContactData contact;
+  final Friends contact;
   final VoidCallback? onTap;
 
   const _ContactTile({required this.contact, this.onTap});
@@ -313,24 +312,17 @@ class _ContactTile extends StatelessWidget {
                   width: 1.5,
                 ),
               ),
-              child: contact.avatarUrl != null
-                  ? ClipOval(
-                      child: Image.network(
-                        contact.avatarUrl!,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                  : Center(
-                      child: Text(
-                        contact.initials,
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w800,
-                          color: badgeColor,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
+              child: Center(
+                child: Text(
+                  contact.initials,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w800,
+                    color: badgeColor,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
             ),
 
             SizedBox(width: 13.w),
@@ -363,7 +355,7 @@ class _ContactTile extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      contact.badge,
+                      contact.name,
                       style: TextStyle(
                         fontSize: 9.sp,
                         fontWeight: FontWeight.w800,
@@ -391,7 +383,7 @@ class _ContactTile extends StatelessWidget {
                 ),
                 SizedBox(height: 3.h),
                 Text(
-                  contact.balanceLabel,
+                  contact.amountLabel,
                   style: TextStyle(
                     fontSize: 10.sp,
                     fontWeight: FontWeight.w600,

@@ -5,13 +5,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 class RecordTransactionScreen extends StatelessWidget {
-  RecordTransactionScreen({super.key});
+  RecordTransactionScreen({super.key, required this.friendId});
+
+  final String friendId;
   final c = Get.put<RecordTransactionController>(RecordTransactionController());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0F14),
+      backgroundColor: const Color(0xFF080A10),
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
@@ -25,86 +27,65 @@ class RecordTransactionScreen extends StatelessWidget {
             // ── Hero heading ───────────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 0),
+                padding: EdgeInsets.fromLTRB(22.w, 20.h, 22.w, 0),
                 child: Obx(
                   () => Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Accent pill
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10.w,
-                          vertical: 5.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: c.accentColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(20.r),
-                          border: Border.all(
-                            color: c.accentColor.withValues(alpha: 0.25),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      // Status pill with animated glow dot
+                      _GlowPill(
+                        label: c.selectedType.value == TransactionType.lend
+                            ? 'LENDING MONEY'
+                            : c.selectedType.value == TransactionType.borrow
+                            ? 'BORROWING MONEY'
+                            : 'SETTLEMENT',
+                        accentColor: c.accentColor,
+                      ),
+                      SizedBox(height: 14.h),
+                      // Headline
+                      RichText(
+                        text: TextSpan(
                           children: [
-                            Container(
-                              width: 6.w,
-                              height: 6.h,
-                              decoration: BoxDecoration(
-                                color: c.accentColor,
-                                shape: BoxShape.circle,
+                            TextSpan(
+                              text: 'Record\n',
+                              style: TextStyle(
+                                fontSize: 38.sp,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: -1.5,
+                                height: 1.05,
                               ),
                             ),
-                            SizedBox(width: 6.w),
-                            Text(
-                              c.selectedType.value == TransactionType.lend
-                                  ? 'LEND MONEY'
-                                  : c.selectedType.value ==
-                                        TransactionType.borrow
-                                  ? 'BORROW MONEY'
-                                  : 'SETTLEMENT',
-                              style: TextStyle(
-                                fontSize: 10.sp,
-                                fontWeight: FontWeight.w700,
-                                color: c.accentColor,
-                                letterSpacing: 1.2,
+                            WidgetSpan(
+                              child: ShaderMask(
+                                shaderCallback: (bounds) => LinearGradient(
+                                  colors: c.accentGradient,
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                ).createShader(bounds),
+                                child: Text(
+                                  'Transaction',
+                                  style: TextStyle(
+                                    fontSize: 38.sp,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: -1.5,
+                                    height: 1.1,
+                                  ),
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      SizedBox(height: 12.h),
-                      Text(
-                        'Record',
-                        style: TextStyle(
-                          fontSize: 34.sp,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: -1.2,
-                          height: 1.0,
-                        ),
-                      ),
-                      ShaderMask(
-                        shaderCallback: (bounds) => LinearGradient(
-                          colors: c.accentGradient,
-                        ).createShader(bounds),
-                        child: Text(
-                          'Transaction',
-                          style: TextStyle(
-                            fontSize: 34.sp,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: -1.2,
-                            height: 1.1,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 6.h),
+                      SizedBox(height: 8.h),
                       Text(
                         'Track your social finances with ease.',
                         style: TextStyle(
                           fontSize: 13.sp,
-                          color: const Color(0xFF6B7280),
+                          color: const Color(0xFF4B5563),
                           fontWeight: FontWeight.w500,
+                          letterSpacing: 0.1,
                         ),
                       ),
                     ],
@@ -116,7 +97,7 @@ class RecordTransactionScreen extends StatelessWidget {
             // ── Type selector ──────────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 26.h, 20.w, 0),
+                padding: EdgeInsets.fromLTRB(22.w, 28.h, 22.w, 0),
                 child: Obx(
                   () => _TypeSelector(
                     selected: c.selectedType.value,
@@ -126,52 +107,39 @@ class RecordTransactionScreen extends StatelessWidget {
               ),
             ),
 
-            // ── Amount — always visible ────────────────────────────────────
+            // ── Amount ────────────────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 0),
+                padding: EdgeInsets.fromLTRB(22.w, 20.h, 22.w, 0),
                 child: Obx(
                   () => _AmountField(
                     controller: c.amountController,
                     accentColor: c.accentColor,
+                    gradient: c.accentGradient,
                   ),
                 ),
               ),
             ),
 
-            // ── Contact — always visible ───────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 0),
-                child: Obx(
-                  () => _ContactField(
-                    selectedFriend: c.selectedFriend.value,
-                    accentColor: c.accentColor,
-                    onTap: () => _showFriendPickerSheet(context, c),
-                  ),
-                ),
-              ),
-            ),
-
-            // ── Fields below hidden for settlement ─────────────────────────
+            // ── Conditional fields ─────────────────────────────────────────
             SliverToBoxAdapter(
               child: Obx(
                 () => AnimatedCrossFade(
-                  duration: const Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 320),
                   sizeCurve: Curves.easeOutCubic,
                   crossFadeState: c.isSettlement
                       ? CrossFadeState.showSecond
                       : CrossFadeState.showFirst,
                   firstChild: Column(
                     children: [
-                      // Date fields row
+                      // Dates row
                       Padding(
-                        padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 0),
+                        padding: EdgeInsets.fromLTRB(22.w, 14.h, 22.w, 0),
                         child: Row(
                           children: [
                             Expanded(
                               child: _DateTile(
-                                label: 'When?',
+                                label: 'WHEN',
                                 value: c.formatDate(c.transactionDate.value),
                                 isEmpty: c.transactionDate.value == null,
                                 icon: Icons.calendar_today_rounded,
@@ -183,7 +151,7 @@ class RecordTransactionScreen extends StatelessWidget {
                             SizedBox(width: 10.w),
                             Expanded(
                               child: _DateTile(
-                                label: 'Return',
+                                label: 'RETURN',
                                 value: c.formatDate(c.returnDate.value),
                                 isEmpty: c.returnDate.value == null,
                                 icon: Icons.event_available_rounded,
@@ -195,19 +163,20 @@ class RecordTransactionScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-
-                      // Note field
+                      // Note
                       Padding(
-                        padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 0),
+                        padding: EdgeInsets.fromLTRB(22.w, 14.h, 22.w, 0),
                         child: _NoteField(controller: c.noteController),
                       ),
                       // Reminder
                       Padding(
-                        padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 0),
-                        child: _ReminderTile(
-                          enabled: c.reminderEnabled.value,
-                          onToggle: (v) => c.reminderEnabled.value = v,
-                          accentColor: c.accentColor,
+                        padding: EdgeInsets.fromLTRB(22.w, 14.h, 22.w, 0),
+                        child: Obx(
+                          () => _ReminderTile(
+                            enabled: c.reminderEnabled.value,
+                            onToggle: (v) => c.reminderEnabled.value = v,
+                            accentColor: c.accentColor,
+                          ),
                         ),
                       ),
                     ],
@@ -217,16 +186,19 @@ class RecordTransactionScreen extends StatelessWidget {
               ),
             ),
 
-            // ── Confirm ────────────────────────────────────────────────────
+            // ── Confirm button ─────────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 40.h),
+                padding: EdgeInsets.fromLTRB(22.w, 28.h, 22.w, 48.h),
                 child: Obx(
                   () => _ConfirmButton(
                     gradient: c.accentGradient,
                     accentColor: c.accentColor,
                     isSettlement: c.isSettlement,
-                    onTap: c.onConfirm,
+                    isLoading: c.isLoading.value,
+                    onTap: c.isLoading.value
+                        ? () {}
+                        : () => c.onConfirm(friendId),
                   ),
                 ),
               ),
@@ -239,11 +211,9 @@ class RecordTransactionScreen extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Pinned top bar delegate
+// Pinned top bar
 // ─────────────────────────────────────────────────────────────────────────────
 class _StickyTopBar extends SliverPersistentHeaderDelegate {
-  // Height is passed in from the widget tree where ScreenUtil is available,
-  // so min/maxExtent always matches what the content actually paints.
   final double height;
   const _StickyTopBar({required this.height});
 
@@ -258,49 +228,45 @@ class _StickyTopBar extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    final bool pinned = shrinkOffset > 0 || overlapsContent;
+    final pinned = shrinkOffset > 0 || overlapsContent;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+      duration: const Duration(milliseconds: 200),
       height: height,
       decoration: BoxDecoration(
         color: pinned
-            ? const Color(0xFF0D0F14).withValues(alpha: 0.97)
+            ? const Color(0xFF080A10).withValues(alpha: 0.96)
             : Colors.transparent,
         border: pinned
             ? Border(
                 bottom: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.06),
+                  color: Colors.white.withValues(alpha: 0.05),
                   width: 1,
                 ),
               )
             : null,
       ),
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      padding: EdgeInsets.symmetric(horizontal: 22.w),
       alignment: Alignment.center,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back button
           GestureDetector(
             onTap: () => Get.back(),
             child: Container(
               width: 40.w,
               height: 40.h,
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1D26),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+                color: const Color(0xFF13161F),
+                borderRadius: BorderRadius.circular(13.r),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
               ),
               child: Icon(
                 Icons.arrow_back_ios_new_rounded,
                 color: const Color(0xFF9CA3AF),
-                size: 16.sp,
+                size: 15.sp,
               ),
             ),
           ),
-          // Logo + name
-
-          // Mirror of back button width for centering
           SizedBox(width: 40.w),
         ],
       ),
@@ -312,7 +278,66 @@ class _StickyTopBar extends SliverPersistentHeaderDelegate {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Type Selector — horizontal cards
+// Glow pill
+// ─────────────────────────────────────────────────────────────────────────────
+class _GlowPill extends StatelessWidget {
+  final String label;
+  final Color accentColor;
+  const _GlowPill({required this.label, required this.accentColor});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(100.r),
+        border: Border.all(color: accentColor.withValues(alpha: 0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withValues(alpha: 0.12),
+            blurRadius: 12,
+            spreadRadius: -2,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Pulsing dot
+          Container(
+            width: 6.w,
+            height: 6.h,
+            decoration: BoxDecoration(
+              color: accentColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: accentColor.withValues(alpha: 0.6),
+                  blurRadius: 6,
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 7.w),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.sp,
+              fontWeight: FontWeight.w700,
+              color: accentColor,
+              letterSpacing: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Type Selector — floating card design
 // ─────────────────────────────────────────────────────────────────────────────
 class _TypeSelector extends StatelessWidget {
   final TransactionType selected;
@@ -326,36 +351,33 @@ class _TypeSelector extends StatelessWidget {
         _TypeCard(
           type: TransactionType.lend,
           selected: selected == TransactionType.lend,
-          icon: Icons.upload_rounded,
-          emoji: '↑',
-          label: 'Lend\nMoney',
-          sub: 'Someone\nowes you',
-          gradient: const [Color(0xFF7C3AED), Color(0xFFBB86FC)],
-          glow: const Color(0xFFBB86FC),
+          icon: Icons.north_east_rounded,
+          label: 'Lend',
+          sub: 'They owe you',
+          gradient: [const Color(0xFF6D28D9), const Color(0xFFA78BFA)],
+          glow: const Color(0xFFA78BFA),
           onTap: () => onSelect(TransactionType.lend),
         ),
-        SizedBox(width: 8.w),
+        SizedBox(width: 9.w),
         _TypeCard(
           type: TransactionType.borrow,
           selected: selected == TransactionType.borrow,
-          icon: Icons.download_rounded,
-          emoji: '↓',
-          label: 'Borrow\nMoney',
-          sub: 'You owe\nsomeone',
-          gradient: const [Color(0xFF00603A), Color(0xFF00E676)],
-          glow: const Color(0xFF00E676),
+          icon: Icons.south_west_rounded,
+          label: 'Borrow',
+          sub: 'You owe them',
+          gradient: [const Color(0xFF065F46), const Color(0xFF34D399)],
+          glow: const Color(0xFF34D399),
           onTap: () => onSelect(TransactionType.borrow),
         ),
-        SizedBox(width: 8.w),
+        SizedBox(width: 9.w),
         _TypeCard(
           type: TransactionType.settlement,
           selected: selected == TransactionType.settlement,
-          icon: Icons.handshake_outlined,
-          emoji: '✓',
-          label: 'Settle\nment',
-          sub: 'Clear the\ndebt',
-          gradient: const [Color(0xFF005B4F), Color(0xFF00BFA5)],
-          glow: const Color(0xFF00BFA5),
+          icon: Icons.balance_rounded,
+          label: 'Settle',
+          sub: 'Clear the debt',
+          gradient: [const Color(0xFF0E7490), const Color(0xFF22D3EE)],
+          glow: const Color(0xFF22D3EE),
           onTap: () => onSelect(TransactionType.settlement),
         ),
       ],
@@ -367,7 +389,6 @@ class _TypeCard extends StatelessWidget {
   final TransactionType type;
   final bool selected;
   final IconData icon;
-  final String emoji;
   final String label;
   final String sub;
   final List<Color> gradient;
@@ -378,7 +399,6 @@ class _TypeCard extends StatelessWidget {
     required this.type,
     required this.selected,
     required this.icon,
-    required this.emoji,
     required this.label,
     required this.sub,
     required this.gradient,
@@ -390,11 +410,14 @@ class _TypeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: GestureDetector(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
+          duration: const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
-          padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
+          padding: EdgeInsets.fromLTRB(0, 18.h, 0, 16.h),
           decoration: BoxDecoration(
             gradient: selected
                 ? LinearGradient(
@@ -403,65 +426,75 @@ class _TypeCard extends StatelessWidget {
                     end: Alignment.bottomRight,
                   )
                 : null,
-            color: selected ? null : const Color(0xFF141720),
-            borderRadius: BorderRadius.circular(22.r),
+            color: selected ? null : const Color(0xFF111318),
+            borderRadius: BorderRadius.circular(24.r),
             border: Border.all(
               color: selected
-                  ? Colors.transparent
-                  : Colors.white.withValues(alpha: 0.06),
-              width: 1.5,
+                  ? gradient.last.withValues(alpha: 0.4)
+                  : Colors.white.withValues(alpha: 0.05),
+              width: selected ? 1.5 : 1,
             ),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: glow.withValues(alpha: 0.35),
-                      blurRadius: 20,
-                      spreadRadius: -2,
-                      offset: const Offset(0, 8),
+                      color: glow.withValues(alpha: 0.28),
+                      blurRadius: 24,
+                      spreadRadius: -4,
+                      offset: const Offset(0, 10),
+                    ),
+                    BoxShadow(
+                      color: glow.withValues(alpha: 0.10),
+                      blurRadius: 8,
+                      spreadRadius: 0,
                     ),
                   ]
                 : [],
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Icon container
+              // Icon badge
               AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                width: 44.w,
-                height: 44.h,
+                duration: const Duration(milliseconds: 260),
+                width: 46.w,
+                height: 46.h,
                 decoration: BoxDecoration(
                   color: selected
-                      ? Colors.white.withValues(alpha: 0.20)
-                      : glow.withValues(alpha: 0.10),
+                      ? Colors.white.withValues(alpha: 0.18)
+                      : glow.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: selected
+                        ? Colors.white.withValues(alpha: 0.25)
+                        : glow.withValues(alpha: 0.14),
+                    width: 1,
+                  ),
                 ),
                 child: Icon(
                   icon,
-                  size: 20.sp,
+                  size: 19.sp,
                   color: selected ? Colors.white : glow,
                 ),
               ),
-              SizedBox(height: 10.h),
+              SizedBox(height: 11.h),
               Text(
                 label,
-                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: 12.5.sp,
                   fontWeight: FontWeight.w800,
                   color: selected ? Colors.white : const Color(0xFF9CA3AF),
-                  height: 1.3,
-                  letterSpacing: -0.2,
+                  letterSpacing: -0.3,
                 ),
               ),
-              SizedBox(height: 4.h),
+              SizedBox(height: 3.h),
               Text(
                 sub,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 9.5.sp,
+                  fontSize: 9.sp,
                   color: selected
-                      ? Colors.white.withValues(alpha: 0.65)
-                      : const Color(0xFF4B5563),
+                      ? Colors.white.withValues(alpha: 0.55)
+                      : const Color(0xFF374151),
                   height: 1.4,
                 ),
               ),
@@ -474,838 +507,120 @@ class _TypeCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Amount Field
+// Amount Field — glass card with glowing border
 // ─────────────────────────────────────────────────────────────────────────────
 class _AmountField extends StatelessWidget {
   final TextEditingController controller;
   final Color accentColor;
-  const _AmountField({required this.controller, required this.accentColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionLabel('How much?'),
-        SizedBox(height: 10.h),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 6.h),
-          decoration: BoxDecoration(
-            color: const Color(0xFF141720),
-            borderRadius: BorderRadius.circular(18.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                '₹',
-                style: TextStyle(
-                  fontSize: 28.sp,
-                  fontWeight: FontWeight.w800,
-                  color: accentColor,
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                      RegExp(r'^\d+\.?\d{0,2}'),
-                    ),
-                  ],
-                  style: TextStyle(
-                    fontSize: 28.sp,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: '0.00',
-                    hintStyle: TextStyle(
-                      fontSize: 28.sp,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white.withValues(alpha: 0.12),
-                    ),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(vertical: 14.h),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Contact Field
-// ─────────────────────────────────────────────────────────────────────────────
-// ── Helper — opens the friend picker sheet ────────────────────────────────────
-void _showFriendPickerSheet(
-  BuildContext context,
-  RecordTransactionController c,
-) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => _FriendPickerSheet(controller: c),
-  );
-}
-
-// ── Helper — opens add-contact sheet on top of picker ────────────────────────
-void _showAddContactSheet(BuildContext context, RecordTransactionController c) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => _AddContactSheet(controller: c),
-  ).then((_) {
-    c.addNameController.clear();
-    c.addPhoneController.clear();
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Contact Field — tappable selector (no text input)
-// ─────────────────────────────────────────────────────────────────────────────
-class _ContactField extends StatelessWidget {
-  final Friends? selectedFriend;
-  final Color accentColor;
-  final VoidCallback onTap;
-
-  const _ContactField({
-    required this.selectedFriend,
+  final List<Color> gradient;
+  const _AmountField({
+    required this.controller,
     required this.accentColor,
-    required this.onTap,
+    required this.gradient,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bool hasSelected = selectedFriend != null;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionLabel('With whom?'),
+        _SectionLabel('AMOUNT'),
         SizedBox(height: 10.h),
-        GestureDetector(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-            decoration: BoxDecoration(
-              color: const Color(0xFF141720),
-              borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(
-                color: hasSelected
-                    ? accentColor.withValues(alpha: 0.35)
-                    : Colors.white.withValues(alpha: 0.07),
-              ),
-            ),
-            child: Row(
-              children: [
-                // Avatar or icon
-                hasSelected
-                    ? Container(
-                        width: 38.w,
-                        height: 38.h,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              accentColor.withValues(alpha: 0.70),
-                              accentColor,
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(11.r),
-                        ),
-                        child: Center(
-                          child: Text(
-                            selectedFriend!.initials,
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Container(
-                        width: 38.w,
-                        height: 38.h,
-                        decoration: BoxDecoration(
-                          color: accentColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(11.r),
-                        ),
-                        child: Icon(
-                          Icons.person_outline_rounded,
-                          size: 18.sp,
-                          color: accentColor,
-                        ),
-                      ),
-                SizedBox(width: 12.w),
-                // Name + number or placeholder
-                Expanded(
-                  child: hasSelected
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              selectedFriend!.name,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: -0.2,
-                              ),
-                            ),
-                            SizedBox(height: 2.h),
-                            Text(
-                              selectedFriend!.number,
-                              style: TextStyle(
-                                fontSize: 11.sp,
-                                color: const Color(0xFF4B5563),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Text(
-                          'Select contact',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: const Color(0xFF4B5563),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                ),
-                // Trailing icon
-                hasSelected
-                    ? GestureDetector(
-                        onTap:
-                            (context
-                                        .findAncestorWidgetOfExactType<
-                                          _ContactField
-                                        >()
-                                    as dynamic)
-                                ?.controller
-                                ?.clear,
-                        child: Icon(
-                          Icons.check_circle_rounded,
-                          size: 18.sp,
-                          color: accentColor,
-                        ),
-                      )
-                    : Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        size: 20.sp,
-                        color: const Color(0xFF4B5563),
-                      ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Friend Picker Sheet
-// ─────────────────────────────────────────────────────────────────────────────
-class _FriendPickerSheet extends StatelessWidget {
-  final RecordTransactionController controller;
-  const _FriendPickerSheet({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = controller;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    return Container(
-      padding: EdgeInsets.only(
-        left: 20.w,
-        right: 20.w,
-        top: 0,
-        bottom: 24.h + bottomInset,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0D0F14),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-        border: Border(
-          top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle
-          Center(
-            child: Container(
-              margin: EdgeInsets.only(top: 12.h, bottom: 20.h),
-              width: 36.w,
-              height: 4.h,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(2.r),
-              ),
-            ),
-          ),
-
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Select Contact',
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: -0.4,
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Get.back();
-                  _showAddContactSheet(context, c);
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 7.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: c.accentColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20.r),
-                    border: Border.all(
-                      color: c.accentColor.withValues(alpha: 0.30),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.person_add_rounded,
-                        size: 13.sp,
-                        color: c.accentColor,
-                      ),
-                      SizedBox(width: 5.w),
-                      Text(
-                        'Add New',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w700,
-                          color: c.accentColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+        // Outer glow container
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22.r),
+            boxShadow: [
+              BoxShadow(
+                color: accentColor.withValues(alpha: 0.15),
+                blurRadius: 20,
+                spreadRadius: -4,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-
-          SizedBox(height: 16.h),
-
-          // Search
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 22.w, vertical: 4.h),
             decoration: BoxDecoration(
-              color: const Color(0xFF141720),
-              borderRadius: BorderRadius.circular(14.r),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+              color: const Color(0xFF111318),
+              borderRadius: BorderRadius.circular(22.r),
+              border: Border.all(
+                color: accentColor.withValues(alpha: 0.22),
+                width: 1.5,
+              ),
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.search_rounded,
-                  size: 18.sp,
-                  color: const Color(0xFF4B5563),
+                // Currency symbol with gradient
+                ShaderMask(
+                  shaderCallback: (bounds) =>
+                      LinearGradient(colors: gradient).createShader(bounds),
+                  child: Text(
+                    '₹',
+                    style: TextStyle(
+                      fontSize: 32.sp,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
                 SizedBox(width: 10.w),
+                // Vertical divider
+                Container(
+                  width: 1,
+                  height: 40.h,
+                  color: Colors.white.withValues(alpha: 0.07),
+                ),
+                SizedBox(width: 14.w),
                 Expanded(
                   child: TextField(
-                    controller: c.searchController,
-                    onChanged: c.onSearchChanged,
-                    style: TextStyle(fontSize: 13.sp, color: Colors.white),
+                    controller: controller,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d+\.?\d{0,2}'),
+                      ),
+                    ],
+                    style: TextStyle(
+                      fontSize: 32.sp,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: -1.0,
+                    ),
                     decoration: InputDecoration(
-                      hintText: 'Search name or number...',
+                      hintText: '0.00',
                       hintStyle: TextStyle(
-                        fontSize: 13.sp,
-                        color: const Color(0xFF4B5563),
+                        fontSize: 32.sp,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white.withValues(alpha: 0.08),
                       ),
                       border: InputBorder.none,
                       isDense: true,
-                      contentPadding: EdgeInsets.zero,
+                      contentPadding: EdgeInsets.symmetric(vertical: 16.h),
+                    ),
+                  ),
+                ),
+                // Decorative tag
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Text(
+                    'INR',
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w700,
+                      color: accentColor,
+                      letterSpacing: 0.8,
                     ),
                   ),
                 ),
               ],
-            ),
-          ),
-
-          SizedBox(height: 14.h),
-
-          // Friends list
-          Flexible(
-            child: Obx(() {
-              final list = c.filteredFriends;
-              if (list.isEmpty) {
-                return Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32.h),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.person_search_rounded,
-                        size: 36.sp,
-                        color: const Color(0xFF374151),
-                      ),
-                      SizedBox(height: 10.h),
-                      Text(
-                        'No contacts found',
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          color: const Color(0xFF4B5563),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return ListView.separated(
-                shrinkWrap: true,
-                physics: const BouncingScrollPhysics(),
-                itemCount: list.length,
-                separatorBuilder: (_, __) => SizedBox(height: 8.h),
-                itemBuilder: (_, i) {
-                  final f = list[i];
-                  final isSelected =
-                      c.selectedFriend.value?.name == f.name &&
-                      c.selectedFriend.value?.number == f.number;
-                  return GestureDetector(
-                    onTap: () => c.selectFriend(f),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 14.w,
-                        vertical: 12.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? c.accentColor.withValues(alpha: 0.10)
-                            : const Color(0xFF141720),
-                        borderRadius: BorderRadius.circular(14.r),
-                        border: Border.all(
-                          color: isSelected
-                              ? c.accentColor.withValues(alpha: 0.35)
-                              : Colors.white.withValues(alpha: 0.06),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          // Avatar
-                          Container(
-                            width: 42.w,
-                            height: 42.h,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: isSelected
-                                    ? [
-                                        c.accentColor.withValues(alpha: 0.70),
-                                        c.accentColor,
-                                      ]
-                                    : [
-                                        const Color(0xFF1E1B2E),
-                                        const Color(0xFF2A2D3A),
-                                      ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(13.r),
-                            ),
-                            child: Center(
-                              child: Text(
-                                f.initials,
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w800,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : const Color(0xFF9CA3AF),
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 12.w),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  f.name,
-                                  style: TextStyle(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                    letterSpacing: -0.2,
-                                  ),
-                                ),
-                                SizedBox(height: 2.h),
-                                Text(
-                                  f.number,
-                                  style: TextStyle(
-                                    fontSize: 11.sp,
-                                    color: const Color(0xFF4B5563),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (isSelected)
-                            Icon(
-                              Icons.check_circle_rounded,
-                              size: 18.sp,
-                              color: c.accentColor,
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Add Contact Sheet
-// ─────────────────────────────────────────────────────────────────────────────
-class _AddContactSheet extends StatelessWidget {
-  final RecordTransactionController controller;
-  const _AddContactSheet({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = controller;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    return Container(
-      padding: EdgeInsets.only(
-        left: 24.w,
-        right: 24.w,
-        top: 20.h,
-        bottom: 28.h + bottomInset,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF141720),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.40),
-            blurRadius: 40,
-            offset: const Offset(0, -8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 40.w,
-              height: 4.h,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(4.r),
-              ),
-            ),
-          ),
-
-          SizedBox(height: 22.h),
-
-          // Title row
-          Row(
-            children: [
-              Container(
-                width: 40.w,
-                height: 40.h,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00C853), Color(0xFF00E676)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00E676).withValues(alpha: 0.30),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.person_add_alt_1_rounded,
-                  size: 18.sp,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Add Contact',
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.4,
-                    ),
-                  ),
-                  Text(
-                    'Add manually or sync from your phone',
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      color: const Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          SizedBox(height: 24.h),
-
-          // Sync from contacts button
-          GestureDetector(
-            onTap: c.onSyncFromContacts,
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(vertical: 14.h),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00C853).withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(14.r),
-                border: Border.all(
-                  color: const Color(0xFF00E676).withValues(alpha: 0.25),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.contacts_rounded,
-                    size: 18.sp,
-                    color: const Color(0xFF00E676),
-                  ),
-                  SizedBox(width: 8.w),
-                  Text(
-                    'Sync from Phone Contacts',
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF00E676),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          SizedBox(height: 20.h),
-
-          // OR divider
-          Row(
-            children: [
-              Expanded(
-                child: Divider(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  thickness: 1,
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12.w),
-                child: Text(
-                  'OR ADD MANUALLY',
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF4B5563),
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Divider(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  thickness: 1,
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: 20.h),
-
-          _DarkTextField(
-            controller: c.addNameController,
-            label: 'Full Name',
-            hint: 'e.g. Arjun Mehta',
-            icon: Icons.person_outline_rounded,
-            iconColor: const Color(0xFF00E676),
-          ),
-
-          SizedBox(height: 14.h),
-
-          _DarkTextField(
-            controller: c.addPhoneController,
-            label: 'Phone Number',
-            hint: 'e.g. 9876543210',
-            icon: Icons.phone_outlined,
-            iconColor: const Color(0xFFBB86FC),
-            keyboardType: TextInputType.phone,
-          ),
-
-          SizedBox(height: 28.h),
-
-          // Submit
-          Obx(
-            () => GestureDetector(
-              onTap: c.isAddingContact.value ? null : c.addContact,
-              child: Container(
-                width: double.infinity,
-                height: 54.h,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF00A854), Color(0xFF00E676)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF00C853).withValues(alpha: 0.35),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: c.isAddingContact.value
-                      ? SizedBox(
-                          width: 22.w,
-                          height: 22.w,
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          'Add Contact',
-                          style: TextStyle(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Dark text field used inside _AddContactSheet
-// ─────────────────────────────────────────────────────────────────────────────
-class _DarkTextField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final String hint;
-  final IconData icon;
-  final Color iconColor;
-  final TextInputType keyboardType;
-
-  const _DarkTextField({
-    required this.controller,
-    required this.label,
-    required this.hint,
-    required this.icon,
-    required this.iconColor,
-    this.keyboardType = TextInputType.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.sp,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF6B7280),
-            letterSpacing: 0.2,
-          ),
-        ),
-        SizedBox(height: 7.h),
-        Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D0F14),
-            borderRadius: BorderRadius.circular(14.r),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-          ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
-            decoration: InputDecoration(
-              prefixIcon: Container(
-                margin: EdgeInsets.all(10.w),
-                width: 30.w,
-                height: 30.h,
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Icon(icon, size: 15.sp, color: iconColor),
-              ),
-              prefixIconConstraints: BoxConstraints(minWidth: 50.w),
-              hintText: hint,
-              hintStyle: TextStyle(
-                fontSize: 13.sp,
-                color: const Color(0xFF374151),
-              ),
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 4.w,
-                vertical: 15.h,
-              ),
             ),
           ),
         ),
@@ -1343,9 +658,13 @@ class _DateTile extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(14.w),
         decoration: BoxDecoration(
-          color: const Color(0xFF141720),
-          borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+          color: const Color(0xFF111318),
+          borderRadius: BorderRadius.circular(18.r),
+          border: Border.all(
+            color: isEmpty
+                ? Colors.white.withValues(alpha: 0.05)
+                : iconColor.withValues(alpha: 0.20),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1353,13 +672,13 @@ class _DateTile extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontSize: 10.sp,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF6B7280),
-                letterSpacing: 0.3,
+                fontSize: 9.5.sp,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF4B5563),
+                letterSpacing: 1.0,
               ),
             ),
-            SizedBox(height: 8.h),
+            SizedBox(height: 9.h),
             Row(
               children: [
                 Container(
@@ -1368,17 +687,20 @@ class _DateTile extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: iconBg,
                     borderRadius: BorderRadius.circular(9.r),
+                    border: Border.all(
+                      color: iconColor.withValues(alpha: 0.15),
+                    ),
                   ),
-                  child: Icon(icon, size: 15.sp, color: iconColor),
+                  child: Icon(icon, size: 14.sp, color: iconColor),
                 ),
                 SizedBox(width: 8.w),
                 Flexible(
                   child: Text(
                     value,
                     style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
-                      color: isEmpty ? const Color(0xFF4B5563) : Colors.white,
+                      fontSize: 11.5.sp,
+                      fontWeight: FontWeight.w700,
+                      color: isEmpty ? const Color(0xFF374151) : Colors.white,
                       letterSpacing: -0.2,
                     ),
                   ),
@@ -1401,32 +723,49 @@ class _NoteField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF141720),
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-      ),
-      child: TextField(
-        controller: controller,
-        maxLines: 3,
-        style: TextStyle(fontSize: 13.sp, color: Colors.white, height: 1.6),
-        decoration: InputDecoration(
-          hintText: 'Add a note — what was this for?',
-          hintStyle: TextStyle(fontSize: 13.sp, color: const Color(0xFF4B5563)),
-          prefixIcon: Padding(
-            padding: EdgeInsets.only(left: 16.w, right: 10.w, top: 14.h),
-            child: Icon(
-              Icons.edit_note_rounded,
-              size: 20.sp,
-              color: const Color(0xFF374151),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionLabel('NOTE'),
+        SizedBox(height: 10.h),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF111318),
+            borderRadius: BorderRadius.circular(18.r),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          ),
+          child: TextField(
+            controller: controller,
+            maxLines: 3,
+            style: TextStyle(
+              fontSize: 13.sp,
+              color: Colors.white,
+              height: 1.65,
+            ),
+            decoration: InputDecoration(
+              hintText: 'What was this for?',
+              hintStyle: TextStyle(
+                fontSize: 13.sp,
+                color: const Color(0xFF374151),
+              ),
+              prefixIcon: Padding(
+                padding: EdgeInsets.only(left: 16.w, right: 12.w, top: 16.h),
+                child: Icon(
+                  Icons.edit_rounded,
+                  size: 17.sp,
+                  color: const Color(0xFF374151),
+                ),
+              ),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 0,
+                minHeight: 0,
+              ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.fromLTRB(0, 16.h, 16.w, 16.h),
             ),
           ),
-          prefixIconConstraints: BoxConstraints(minWidth: 0, minHeight: 0),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.fromLTRB(0, 14.h, 16.w, 14.h),
         ),
-      ),
+      ],
     );
   }
 }
@@ -1448,29 +787,51 @@ class _ReminderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
+      duration: const Duration(milliseconds: 240),
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
       decoration: BoxDecoration(
         color: enabled
-            ? accentColor.withValues(alpha: 0.10)
-            : const Color(0xFF141720),
-        borderRadius: BorderRadius.circular(18.r),
+            ? accentColor.withValues(alpha: 0.07)
+            : const Color(0xFF111318),
+        borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
           color: enabled
-              ? accentColor.withValues(alpha: 0.30)
-              : Colors.white.withValues(alpha: 0.07),
+              ? accentColor.withValues(alpha: 0.25)
+              : Colors.white.withValues(alpha: 0.05),
         ),
+        boxShadow: enabled
+            ? [
+                BoxShadow(
+                  color: accentColor.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  spreadRadius: -2,
+                ),
+              ]
+            : [],
       ),
       child: Row(
         children: [
-          Container(
-            width: 42.w,
-            height: 42.h,
+          // Bell icon
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 240),
+            width: 44.w,
+            height: 44.h,
             decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(13.r),
+              color: enabled
+                  ? accentColor.withValues(alpha: 0.15)
+                  : const Color(0xFF1A1D26),
+              borderRadius: BorderRadius.circular(14.r),
+              border: Border.all(
+                color: enabled
+                    ? accentColor.withValues(alpha: 0.30)
+                    : Colors.white.withValues(alpha: 0.05),
+              ),
             ),
-            child: Icon(Icons.alarm_rounded, size: 20.sp, color: accentColor),
+            child: Icon(
+              Icons.notifications_rounded,
+              size: 19.sp,
+              color: enabled ? accentColor : const Color(0xFF4B5563),
+            ),
           ),
           SizedBox(width: 14.w),
           Expanded(
@@ -1478,7 +839,7 @@ class _ReminderTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Set Repayment Reminder',
+                  'Repayment Reminder',
                   style: TextStyle(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w700,
@@ -1488,22 +849,48 @@ class _ReminderTile extends StatelessWidget {
                 ),
                 SizedBox(height: 3.h),
                 Text(
-                  "Notify me when it's time to settle",
+                  'Get notified when it\'s time to settle',
                   style: TextStyle(
                     fontSize: 11.sp,
-                    color: const Color(0xFF6B7280),
+                    color: const Color(0xFF4B5563),
                   ),
                 ),
               ],
             ),
           ),
-          Switch.adaptive(
-            value: enabled,
-            onChanged: onToggle,
-            activeColor: Colors.white,
-            activeTrackColor: accentColor,
-            inactiveThumbColor: const Color(0xFF4B5563),
-            inactiveTrackColor: const Color(0xFF1A1D26),
+          // Custom toggle
+          GestureDetector(
+            onTap: () => onToggle(!enabled),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 240),
+              width: 48.w,
+              height: 26.h,
+              padding: EdgeInsets.all(3.w),
+              decoration: BoxDecoration(
+                color: enabled ? accentColor : const Color(0xFF1A1D26),
+                borderRadius: BorderRadius.circular(100.r),
+                border: Border.all(
+                  color: enabled
+                      ? accentColor.withValues(alpha: 0.5)
+                      : Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+              child: AnimatedAlign(
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.easeOutCubic,
+                alignment: enabled
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
+                child: Container(
+                  width: 20.w,
+                  height: 20.h,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -1518,6 +905,7 @@ class _ConfirmButton extends StatelessWidget {
   final List<Color> gradient;
   final Color accentColor;
   final bool isSettlement;
+  final bool isLoading;
   final VoidCallback onTap;
 
   const _ConfirmButton({
@@ -1525,66 +913,118 @@ class _ConfirmButton extends StatelessWidget {
     required this.accentColor,
     required this.isSettlement,
     required this.onTap,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: 18.h),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: gradient,
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: BorderRadius.circular(22.r),
-          boxShadow: [
-            BoxShadow(
-              color: accentColor.withValues(alpha: 0.35),
-              blurRadius: 28,
-              spreadRadius: -4,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 26.w,
-              height: 26.h,
+      onTap: isLoading
+          ? null
+          : () {
+              HapticFeedback.mediumImpact();
+              onTap();
+            },
+      child: Stack(
+        children: [
+          // Outer glow
+          Positioned.fill(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 240),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.20),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isSettlement ? Icons.handshake_outlined : Icons.check_rounded,
-                size: 14.sp,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(width: 10.w),
-            Text(
-              isSettlement ? 'Confirm Settlement' : 'Confirm Transaction',
-              style: TextStyle(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: -0.3,
+                borderRadius: BorderRadius.circular(24.r),
+                boxShadow: isLoading
+                    ? []
+                    : [
+                        BoxShadow(
+                          color: accentColor.withValues(alpha: 0.40),
+                          blurRadius: 32,
+                          spreadRadius: -6,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
               ),
             ),
-          ],
-        ),
+          ),
+          // Button body
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 240),
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 19.h),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isLoading
+                    ? [
+                        gradient.first.withValues(alpha: 0.45),
+                        gradient.last.withValues(alpha: 0.45),
+                      ]
+                    : gradient,
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(24.r),
+              border: Border.all(
+                color: isLoading
+                    ? Colors.transparent
+                    : gradient.last.withValues(alpha: 0.35),
+                width: 1.5,
+              ),
+            ),
+            child: isLoading
+                ? Center(
+                    child: SizedBox(
+                      width: 22.w,
+                      height: 22.w,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 28.w,
+                        height: 28.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: Icon(
+                          isSettlement
+                              ? Icons.balance_rounded
+                              : Icons.check_rounded,
+                          size: 14.sp,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Text(
+                        isSettlement
+                            ? 'Confirm Settlement'
+                            : 'Confirm Transaction',
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shared section label
+// Section label
 // ─────────────────────────────────────────────────────────────────────────────
 class _SectionLabel extends StatelessWidget {
   final String text;
@@ -1595,10 +1035,10 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
-        fontSize: 12.sp,
+        fontSize: 10.sp,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFF6B7280),
-        letterSpacing: 0.3,
+        color: const Color(0xFF4B5563),
+        letterSpacing: 1.2,
       ),
     );
   }
