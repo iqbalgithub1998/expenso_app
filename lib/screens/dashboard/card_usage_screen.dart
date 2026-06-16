@@ -1,4 +1,5 @@
 import 'package:expenso/controllers/card_usage_controller.dart';
+import 'package:expenso/models/friend.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -517,7 +518,7 @@ void _showAddUserSheet(BuildContext context, CardUsageController c) {
 }
 
 class _WhoUsedField extends StatelessWidget {
-  final CardUser? selectedUser;
+  final Friends? selectedUser;
   final Color accentColor;
   final VoidCallback onTap;
 
@@ -810,7 +811,7 @@ class _UserPickerSheet extends StatelessWidget {
                 separatorBuilder: (_, __) => SizedBox(height: 8.h),
                 itemBuilder: (_, i) {
                   final u = list[i];
-                  final isSel = c.selectedUser.value?.name == u.name;
+                  final isSel = c.selectedUser.value?.id == u.id;
                   return GestureDetector(
                     onTap: () => c.selectUser(u),
                     child: AnimatedContainer(

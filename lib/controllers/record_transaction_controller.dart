@@ -186,7 +186,8 @@ class RecordTransactionController extends GetxController {
       // refresh in-app controllers/UI
       if (Get.isRegistered<LendBorrowController>()) {
         final lendBorrowController = Get.find<LendBorrowController>();
-        await lendBorrowController.loadFriends();
+        await lendBorrowController.refreshFriends();
+        lendBorrowController.loadBalance();
         await lendBorrowController.refreshCurrentFriendTransactions(friendId);
       }
 
@@ -195,16 +196,16 @@ class RecordTransactionController extends GetxController {
           ? 'Settlement recorded on ${formatDate(transactionDate.value)}'
           : '$typeLabel of ₹${amount.value} recorded successfully.';
 
-      Get.snackbar(
-        'Recorded ✓',
-        msg,
-        backgroundColor: const Color(0xFF0D1F15),
-        colorText: accentColor,
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 14,
-        duration: const Duration(seconds: 3),
-      );
+      // Get.snackbar(
+      //   'Recorded ✓',
+      //   msg,
+      //   backgroundColor: const Color(0xFF0D1F15),
+      //   colorText: accentColor,
+      //   snackPosition: SnackPosition.BOTTOM,
+      //   margin: const EdgeInsets.all(16),
+      //   borderRadius: 14,
+      //   duration: const Duration(seconds: 3),
+      // );
 
       // Reset form
       amountController.clear();

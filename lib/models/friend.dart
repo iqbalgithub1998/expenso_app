@@ -78,6 +78,6 @@ class Friends {
   String get amountLabel {
     if (closingBalance == 0) return r'₹0.00';
     final abs = closingBalance.abs().toStringAsFixed(2);
-    return closingBalance > 0 ? '₹$abs' : '-₹$abs';
+    return '₹ $abs';
   }
 }

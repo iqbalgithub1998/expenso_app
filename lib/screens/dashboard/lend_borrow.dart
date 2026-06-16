@@ -1,39 +1,31 @@
 import 'package:expenso/controllers/lend_borrow_controller.dart';
 import 'package:expenso/models/friend.dart';
-import 'package:expenso/screens/dashboard/lend_borrow_transaction.dart';
+
 import 'package:expenso/utils/validator/validators.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 class LendBorrowScreen extends StatelessWidget {
   LendBorrowScreen({super.key});
-  final controller = Get.put<LendBorrowController>(LendBorrowController());
+  final controller = Get.put<LendBorrowController>(
+    LendBorrowController(),
+    permanent: false,
+  );
 
-  // ── Design tokens ──────────────────────────────────────────────────────────
+  // ── Design tokens ────────────────────────────────────────────────────────
   static const _bg = Color(0xFF0D0F14);
   static const _surface = Color(0xFF141720);
-  static const _surfaceAlt = Color(0xFF1A1D26);
   static const _border = Color(0x12FFFFFF);
   static const _textMuted = Color(0xFF4B5563);
-  static const _textSec = Color(0xFF9CA3AF);
   static const _accent = Color(0xFF00E676);
-  static const _accentMid = Color(0xFF00C853);
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await controller.loadFriends();
-      // controller.initContactsPage();
-    });
-
-    final scrollController = ScrollController();
-    scrollController.addListener(() {
-      if (scrollController.position.pixels >=
-          scrollController.position.maxScrollExtent - 140) {
-        controller.loadMoreContacts();
-      }
-    });
+    // WidgetsBinding.instance.addPostFrameCallback(
+    //   (_) => controller.loadFriends(),
+    // );
 
     return Scaffold(
       backgroundColor: _bg,
@@ -42,7 +34,7 @@ class LendBorrowScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── App Bar ────────────────────────────────────────────────────
+            // ── App Bar ──────────────────────────────────────────────────
             Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: 20.w,
@@ -50,7 +42,6 @@ class LendBorrowScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Logo + title
                   Row(
                     children: [
                       Container(
@@ -95,7 +86,7 @@ class LendBorrowScreen extends StatelessWidget {
 
             SizedBox(height: 10.h),
 
-            // ── Net Position Hero ──────────────────────────────────────────
+            // ── Net Position Hero ────────────────────────────────────────
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w),
               child: const _NetPositionCard(),
@@ -103,7 +94,7 @@ class LendBorrowScreen extends StatelessWidget {
 
             SizedBox(height: 14.h),
 
-            // ── Search ─────────────────────────────────────────────────────
+            // ── Search ───────────────────────────────────────────────────
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w),
               child: Container(
@@ -117,7 +108,7 @@ class LendBorrowScreen extends StatelessWidget {
                   onChanged: controller.onSearchChanged,
                   style: TextStyle(fontSize: 13.sp, color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: 'Search contacts by name...',
+                    hintText: 'Search contacts by name or number...',
                     hintStyle: TextStyle(fontSize: 13.sp, color: _textMuted),
                     prefixIcon: Icon(
                       Icons.search_rounded,
@@ -133,7 +124,7 @@ class LendBorrowScreen extends StatelessWidget {
 
             SizedBox(height: 12.h),
 
-            // ── Filter Chips ───────────────────────────────────────────────
+            // ── Filter Chips ─────────────────────────────────────────────
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w),
               child: Obx(
@@ -158,34 +149,57 @@ class LendBorrowScreen extends StatelessWidget {
 
             SizedBox(height: 14.h),
 
-            // ── Section label ──────────────────────────────────────────────
+            // ── Section label ────────────────────────────────────────────
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20.w),
-              child: Obx(
-                () => Text(
-                  controller.showingFavourites.value
-                      ? 'FAVOURITES'
-                      : 'RECENT INTERACTIONS',
-                  style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w700,
-                    color: _textMuted,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
+              child: Obx(() {
+                final filter = controller.activeFilter.value;
+                final count = controller.displayedFriends.length;
+                final label = filter == ContactFilter.all
+                    ? 'ALL CONTACTS'
+                    : '${_filterLabel(filter).toUpperCase()} CONTACTS';
+                return Row(
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w700,
+                        color: _textMuted,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    if (count > 0) ...[
+                      SizedBox(width: 8.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 7.w,
+                          vertical: 2.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20.r),
+                        ),
+                        child: Text(
+                          '$count',
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w700,
+                            color: _accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              }),
             ),
 
             SizedBox(height: 14.h),
 
-            // ── Contact List ───────────────────────────────────────────────
+            // ── Contact List ─────────────────────────────────────────────
             Expanded(
               child: Obx(() {
-                print(controller.isFetchingFriends.value);
-
-                print(controller.displayedFriends.isEmpty);
-
-                print(controller.displayedFriends.length);
                 if (controller.isFetchingFriends.value) {
                   return const Center(
                     child: CircularProgressIndicator(
@@ -198,29 +212,28 @@ class LendBorrowScreen extends StatelessWidget {
                   return _EmptyState(
                     isFavourites: controller.showingFavourites.value,
                   );
-                } else {
-                  return ListView.separated(
-                    controller: scrollController,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20.w,
-                    ).copyWith(bottom: 110.h),
-                    itemCount:
-                        controller.displayedFriends.length +
-                        (controller.isLoadingMore.value ? 1 : 0),
-                    separatorBuilder: (_, __) => SizedBox(height: 12.h),
-                    itemBuilder: (context, index) {
-                      if (index == controller.displayedFriends.length) {
-                        return _LoadingTile();
-                      }
-                      final contact = controller.displayedFriends[index];
-                      return _ContactTile(
-                        contact: contact,
-                        onTap: () => controller.friendTransaction(contact),
-                        onFavouriteTap: () => {},
-                      );
-                    },
-                  );
                 }
+                return ListView.separated(
+                  controller: controller.scrollController,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20.w,
+                  ).copyWith(bottom: 110.h),
+                  itemCount:
+                      controller.displayedFriends.length +
+                      (controller.isLoadingMore.value ? 1 : 0),
+                  separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                  itemBuilder: (context, index) {
+                    if (index == controller.displayedFriends.length) {
+                      return _LoadingTile();
+                    }
+                    final contact = controller.displayedFriends[index];
+                    return _ContactTile(
+                      contact: contact,
+                      onTap: () => controller.friendTransaction(contact),
+                      onFavouriteTap: () {},
+                    );
+                  },
+                );
               }),
             ),
           ],
@@ -251,103 +264,181 @@ class _NetPositionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(22.w),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF00603A), Color(0xFF00A854), Color(0xFF00E676)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: [0.0, 0.55, 1.0],
-        ),
-        borderRadius: BorderRadius.circular(24.r),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF00C853).withValues(alpha: 0.30),
-            blurRadius: 28,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -12,
-            top: -12,
-            child: Icon(
-              Icons.handshake_outlined,
-              size: 110.sp,
-              color: Colors.white.withValues(alpha: 0.07),
+    final LendBorrowController controller = Get.find();
+
+    return Obx(() {
+      final net = controller.netBalance.value;
+      final isPositive = net >= 0;
+
+      // Dynamic gradient based on net balance
+      final gradient = isPositive
+          ? const LinearGradient(
+              colors: [Color(0xFF00603A), Color(0xFF00A854), Color(0xFF00E676)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              stops: [0.0, 0.55, 1.0],
+            )
+          : const LinearGradient(
+              colors: [Color(0xFF7B0000), Color(0xFFB71C1C), Color(0xFFEF5350)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              stops: [0.0, 0.55, 1.0],
+            );
+
+      final shadowColor = isPositive
+          ? const Color(0xFF00C853).withValues(alpha: 0.30)
+          : const Color(0xFFEF5350).withValues(alpha: 0.30);
+
+      final subtitle = net == 0
+          ? 'You are all settled up'
+          : isPositive
+          ? 'Overall you are owed more than you owe'
+          : 'Overall you owe more than you are owed';
+
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(22.w),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(24.r),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 28,
+              offset: const Offset(0, 10),
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.trending_up_rounded,
-                    size: 14.sp,
-                    color: Colors.white.withValues(alpha: 0.75),
-                  ),
-                  SizedBox(width: 5.w),
-                  Text(
-                    'Net Position',
-                    style: TextStyle(
-                      fontSize: 12.sp,
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -12,
+              top: -12,
+              child: Icon(
+                isPositive
+                    ? Icons.handshake_outlined
+                    : Icons.account_balance_wallet_outlined,
+                size: 110.sp,
+                color: Colors.white.withValues(alpha: 0.07),
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header label
+                Row(
+                  children: [
+                    Icon(
+                      isPositive
+                          ? Icons.trending_up_rounded
+                          : Icons.trending_down_rounded,
+                      size: 14.sp,
                       color: Colors.white.withValues(alpha: 0.75),
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 8.h),
-              Text(
-                '+\$1,240.50',
-                style: TextStyle(
-                  fontSize: 36.sp,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: -1.2,
-                  height: 1.0,
+                    SizedBox(width: 5.w),
+                    Text(
+                      'Net Position',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const Spacer(),
+                    // Status badge
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10.w,
+                        vertical: 4.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20.r),
+                      ),
+                      child: Text(
+                        net == 0
+                            ? 'Settled'
+                            : isPositive
+                            ? 'In Profit'
+                            : 'In Debt',
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(height: 4.h),
-              Text(
-                'You are owed more than you owe',
-                style: TextStyle(
-                  fontSize: 11.sp,
-                  color: Colors.white.withValues(alpha: 0.60),
-                  fontWeight: FontWeight.w400,
+
+                SizedBox(height: 8.h),
+
+                // Net balance amount
+                Text(
+                  '₹ ${net.abs().toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 36.sp,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -1.2,
+                    height: 1.0,
+                  ),
                 ),
-              ),
-              SizedBox(height: 18.h),
-              Row(
-                children: [
-                  Expanded(
-                    child: _NetPill(
-                      label: 'LENT',
-                      value: '\$2,800.00',
-                      icon: Icons.arrow_upward_rounded,
-                    ),
+
+                SizedBox(height: 4.h),
+
+                // Dynamic subtitle
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: Colors.white.withValues(alpha: 0.65),
+                    fontWeight: FontWeight.w400,
                   ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: _NetPill(
-                      label: 'BORROWED',
-                      value: '\$1,559.50',
-                      icon: Icons.arrow_downward_rounded,
+                ),
+
+                SizedBox(height: 18.h),
+
+                // Divider
+                Divider(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  thickness: 0.8,
+                ),
+
+                SizedBox(height: 14.h),
+
+                // Lent & Borrowed pills
+                Row(
+                  children: [
+                    Expanded(
+                      child: _NetPill(
+                        label: 'YOU LENT',
+                        value:
+                            '₹ ${controller.netLend.value.abs().toStringAsFixed(2)}',
+                        icon: Icons.arrow_upward_rounded,
+                        iconColor: const Color(0xFF69F0AE), // bright green
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: _NetPill(
+                        label: 'YOU OWE',
+                        value:
+                            '₹ ${controller.netBorrow.value.toStringAsFixed(2)}',
+                        icon: Icons.arrow_downward_rounded,
+                        iconColor: const Color(0xFFFF8A80), // bright red
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
   }
 }
 
@@ -355,57 +446,62 @@ class _NetPill extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
+  final Color iconColor;
 
   const _NetPill({
     required this.label,
     required this.value,
     required this.icon,
+    required this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14.r),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 0.8,
+        ),
       ),
       child: Row(
         children: [
           Container(
-            width: 26.w,
-            height: 26.w,
+            padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
+              color: iconColor.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 13.sp, color: Colors.white),
+            child: Icon(icon, size: 13.sp, color: iconColor),
           ),
           SizedBox(width: 8.w),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 9.sp,
-                  color: Colors.white.withValues(alpha: 0.70),
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9.sp,
+                    color: Colors.white.withValues(alpha: 0.60),
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.4,
+                  ),
                 ),
-              ),
-              SizedBox(height: 2.h),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: -0.3,
+                SizedBox(height: 2.h),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -483,26 +579,24 @@ class _ContactTile extends StatelessWidget {
     final badgeBg = Color(contact.badgeBgValue);
     final amountColor = Color(contact.amountColorValue);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20.r),
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap?.call();
+      },
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         decoration: BoxDecoration(
-          color: const Color(0xFF141720),
+          color: const Color(0xFF111318),
           borderRadius: BorderRadius.circular(20.r),
-          border: Border.all(color: badgeColor.withValues(alpha: 0.12)),
-          boxShadow: [
-            BoxShadow(
-              color: badgeColor.withValues(alpha: 0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.05),
+            width: 1,
+          ),
         ),
         child: Row(
           children: [
-            // Avatar
+            // ── Avatar ──────────────────────────────────────────────────
             Container(
               width: 48.w,
               height: 48.w,
@@ -510,7 +604,7 @@ class _ContactTile extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: badgeBg,
                 border: Border.all(
-                  color: badgeColor.withValues(alpha: 0.30),
+                  color: badgeColor.withValues(alpha: 0.35),
                   width: 1.5,
                 ),
               ),
@@ -519,7 +613,7 @@ class _ContactTile extends StatelessWidget {
                   contact.initials,
                   style: TextStyle(
                     fontSize: 14.sp,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: badgeColor,
                     letterSpacing: 0.5,
                   ),
@@ -529,7 +623,7 @@ class _ContactTile extends StatelessWidget {
 
             SizedBox(width: 13.w),
 
-            // Name + status badge
+            // ── Name + phone pill ────────────────────────────────────────
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -540,81 +634,95 @@ class _ContactTile extends StatelessWidget {
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
-                      letterSpacing: -0.2,
+                      letterSpacing: -0.3,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 5.h),
+                  SizedBox(height: 6.h),
+                  // Phone pill with icon
                   Container(
                     padding: EdgeInsets.symmetric(
                       horizontal: 8.w,
-                      vertical: 3.h,
+                      vertical: 3.5.h,
                     ),
                     decoration: BoxDecoration(
                       color: badgeBg,
-                      borderRadius: BorderRadius.circular(20.r),
+                      borderRadius: BorderRadius.circular(100.r),
                       border: Border.all(
-                        color: badgeColor.withValues(alpha: 0.25),
+                        color: badgeColor.withValues(alpha: 0.22),
+                        width: 1,
                       ),
                     ),
-                    child: Text(
-                      contact.name,
-                      style: TextStyle(
-                        fontSize: 9.sp,
-                        fontWeight: FontWeight.w800,
-                        color: badgeColor,
-                        letterSpacing: 0.8,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.phone_rounded,
+                          size: 10.sp,
+                          color: badgeColor,
+                        ),
+                        SizedBox(width: 4.w),
+                        Text(
+                          contact.number,
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w600,
+                            color: badgeColor,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
 
-            // Amount + balance label
+            SizedBox(width: 12.w),
+
+            // ── Amount + status ──────────────────────────────────────────
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
                   contact.amountLabel,
                   style: TextStyle(
-                    fontSize: 15.sp,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.w800,
                     color: amountColor,
-                    letterSpacing: -0.4,
+                    letterSpacing: -0.6,
                   ),
                 ),
-                SizedBox(height: 3.h),
-                Text(
-                  contact.amountLabel,
-                  style: TextStyle(
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF4B5563),
-                    letterSpacing: 0.4,
-                  ),
+                SizedBox(height: 5.h),
+                // Status dot + label row
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6.w,
+                      height: 6.w,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: amountColor.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    SizedBox(width: 5.w),
+                    Text(
+                      contact.closingBalance > 0
+                          ? 'You owe them'
+                          : 'They owe you', // e.g. "they owe you" / "you owe them" / "settled"
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF4B5563),
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-
-            SizedBox(width: 6.w),
-
-            // Favourite star
-            // GestureDetector(
-            //   onTap: onFavouriteTap,
-            //   behavior: HitTestBehavior.opaque,
-            //   child: Padding(
-            //     padding: EdgeInsets.only(left: 6.w),
-            //     child: Icon(
-            //       contact.isFavourite
-            //           ? Icons.star_rounded
-            //           : Icons.star_outline_rounded,
-            //       size: 20.sp,
-            //       color: contact.isFavourite
-            //           ? const Color(0xFF00E676)
-            //           : const Color(0xFF374151),
-            //     ),
-            //   ),
-            // ),
           ],
         ),
       ),

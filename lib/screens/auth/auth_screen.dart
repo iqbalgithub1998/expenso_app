@@ -402,8 +402,12 @@ class AuthScreen extends StatelessWidget {
           SizedBox(height: 28.h),
           Obx(
             () => _buildPrimaryButton(
-              label: controller.isLoading.value ? 'Logging in...' : 'Continue to Dashboard',
-              onPressed: controller.isLoading.value ? () {} : controller.onLoginPressed,
+              label: controller.isLoading.value
+                  ? 'Logging in...'
+                  : 'Continue to Dashboard',
+              onPressed: controller.isLoading.value
+                  ? () {}
+                  : controller.onLoginPressed,
               isLoading: controller.isLoading.value,
             ),
           ),
@@ -506,8 +510,12 @@ class AuthScreen extends StatelessWidget {
           SizedBox(height: 28.h),
           Obx(
             () => _buildPrimaryButton(
-              label: controller.isLoading.value ? 'Creating...' : 'Create Account',
-              onPressed: controller.isLoading.value ? () {} : controller.onRegisterPressed,
+              label: controller.isLoading.value
+                  ? 'Creating...'
+                  : 'Create Account',
+              onPressed: controller.isLoading.value
+                  ? () {}
+                  : controller.onRegisterPressed,
               isLoading: controller.isLoading.value,
             ),
           ),

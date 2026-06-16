@@ -11,7 +11,7 @@ This table stores application user information separately from `auth.users`.
 - Optimized with indexes
 
 ---
-
+//4dc5925f2d7053
 # SQL Schema
 
 ```sql
@@ -155,6 +155,19 @@ ON friends(owner_id);
 
 CREATE INDEX idx_friends_linked_user_id
 ON friends(linked_user_id);
+
+
+CREATE OR REPLACE FUNCTION get_balance_summary(p_owner_id UUID)
+RETURNS TABLE(total_positive NUMERIC, total_negative NUMERIC) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    COALESCE(SUM(CASE WHEN closing_balance > 0 THEN closing_balance ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN closing_balance < 0 THEN closing_balance ELSE 0 END), 0)
+  FROM friends
+  WHERE owner_id = p_owner_id;
+END;
+
 ```
 
 ---
@@ -188,6 +201,7 @@ CREATE TABLE lend_borrow_transaction (
   when_date DATE NOT NULL DEFAULT CURRENT_DATE,
   return_date DATE,
   type lend_borrow_type NOT NULL,
+  is_acknowledged BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -227,4 +241,133 @@ ON lend_borrow_transaction(return_date);
 
 CREATE INDEX idx_lend_borrow_when_date
 ON lend_borrow_transaction(when_date);
+```
+
+---
+
+# Credit Card Table
+
+This table stores the credit cards added by the user.
+
+## Features
+
+- Linked to `user_profile` via `user_id` (the owner of the card).
+- Stores only the last 4 digits of the card number for security — never the full number.
+- `balance` tracks the current outstanding balance; `card_limit` is the total credit limit.
+- `color` stores the user-selected card color (hex string, e.g. `#1A1A2E`).
+- `billing_date` and `payment_due_date` store the day of the month (1–31).
+- Supports Row Level Security (RLS) so users can only access their own cards.
+
+---
+
+# SQL Schema
+
+```sql
+CREATE TABLE credit_card (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES user_profile(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  last4 VARCHAR(4) NOT NULL CHECK (last4 ~ '^[0-9]{4}$'),
+  balance DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+  card_limit DECIMAL(12, 2) NOT NULL,
+  color VARCHAR(20),
+  billing_date SMALLINT CHECK (billing_date BETWEEN 1 AND 31),
+  payment_due_date SMALLINT CHECK (payment_due_date BETWEEN 1 AND 31),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+ALTER TABLE credit_card ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own credit cards"
+ON credit_card
+FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own credit cards"
+ON credit_card
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own credit cards"
+ON credit_card
+FOR UPDATE
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own credit cards"
+ON credit_card
+FOR DELETE
+USING (auth.uid() = user_id);
+
+CREATE INDEX idx_credit_card_user_id
+ON credit_card(user_id);
+```
+
+---
+
+# Credit Card Transaction Table
+
+This table stores transactions made on a credit card linked to a `credit_card` entry.
+
+## Features
+
+- Linked to `credit_card` via `card_id` (the card used for the transaction).
+- Linked to `user_profile` via `user_id` (the owner of the transaction).
+- Supports two transaction types: `used` (amount spent on the card) and `paid` (amount paid towards the card).
+- `used_by` is optional — `null` if used by the owner, otherwise the `user_id` of the friend who used it.
+- `used_on` stores the date the transaction occurred.
+- `note` is optional — can be used to add remarks.
+- Supports Row Level Security (RLS) so users can only access their own card transactions.
+
+---
+
+# SQL Schema
+
+```sql
+CREATE TYPE credit_card_transaction_type AS ENUM ('used', 'paid');
+
+CREATE TABLE credit_card_transaction (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  card_id UUID NOT NULL REFERENCES credit_card(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES user_profile(id) ON DELETE CASCADE,
+  type credit_card_transaction_type NOT NULL,
+  amount DECIMAL(12, 2) NOT NULL,
+  used_by UUID REFERENCES friends(id) ON DELETE SET NULL,
+  used_on DATE NOT NULL DEFAULT CURRENT_DATE,
+  note TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+ALTER TABLE credit_card_transaction ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own credit card transactions"
+ON credit_card_transaction
+FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own credit card transactions"
+ON credit_card_transaction
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own credit card transactions"
+ON credit_card_transaction
+FOR UPDATE
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own credit card transactions"
+ON credit_card_transaction
+FOR DELETE
+USING (auth.uid() = user_id);
+
+CREATE INDEX idx_credit_card_transaction_card_id
+ON credit_card_transaction(card_id);
+
+CREATE INDEX idx_credit_card_transaction_user_id
+ON credit_card_transaction(user_id);
+
+CREATE INDEX idx_credit_card_transaction_used_by
+ON credit_card_transaction(used_by);
+
+CREATE INDEX idx_credit_card_transaction_used_on
+ON credit_card_transaction(used_on);
 ```

@@ -1,9 +1,11 @@
+import 'dart:ui';
 import 'package:expenso/models/friend.dart';
 import 'package:expenso/screens/dashboard/record_transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:expenso/controllers/lend_borrow_controller.dart';
+import 'package:intl/intl.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Models
@@ -77,45 +79,48 @@ class LendBorrowTransaction extends StatelessWidget {
                         ),
                       )
                     : controller.friendTxDays.isEmpty
-                        ? Center(
-                            child: Text(
-                              'No transactions recorded yet.',
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                color: const Color(0xFF4B5563),
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 16.w,
-                            ).copyWith(top: 8.h, bottom: 100.h),
-                            itemCount: controller.friendTxDays.length,
-                            itemBuilder: (_, di) {
-                              final day = controller.friendTxDays[di];
-                              return Column(
-                                children: [
-                                  _DateChip(label: day.dateLabel),
-                                  SizedBox(height: 12.h),
-                                  ...day.messages.map((msg) {
-                                    if (msg.type == TxType.settled) {
-                                      return _SettledBanner(amount: msg.amount);
-                                    }
-                                    return Container(
-                                      width: double.infinity,
-                                      alignment: msg.isMine
-                                          ? Alignment.centerRight
-                                          : null,
-                                      child: msg.isMine
-                                          ? _SentBubble(msg: msg)
-                                          : _ReceivedBubble(msg: msg),
-                                    );
-                                  }),
-                                  SizedBox(height: 8.h),
-                                ],
-                              );
-                            },
+                    ? Center(
+                        child: Text(
+                          'No transactions recorded yet.',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: const Color(0xFF4B5563),
                           ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                        ).copyWith(top: 8.h, bottom: 100.h),
+                        itemCount: controller.friendTxDays.length,
+                        itemBuilder: (_, di) {
+                          final day = controller.friendTxDays[di];
+                          return Column(
+                            children: [
+                              _DateChip(label: day.dateLabel),
+                              SizedBox(height: 12.h),
+                              ...day.messages.map((msg) {
+                                if (msg.type == TxType.settled) {
+                                  return _SettledBanner(msg: msg, context: context);
+                                }
+                                return GestureDetector(
+                                  onTap: () => _showTxDetailModal(context, msg),
+                                  child: Container(
+                                    width: double.infinity,
+                                    alignment: msg.isMine
+                                        ? Alignment.centerRight
+                                        : null,
+                                    child: msg.isMine
+                                        ? _SentBubble(msg: msg)
+                                        : _ReceivedBubble(msg: msg),
+                                  ),
+                                );
+                              }),
+                              SizedBox(height: 8.h),
+                            ],
+                          );
+                        },
+                      ),
               ),
             ],
           );
@@ -193,9 +198,9 @@ class _Header extends StatelessWidget {
                     style: TextStyle(fontSize: 11.sp),
                     children: [
                       TextSpan(
-                        text: friend.closingBalance >= 0
-                            ? 'You lent '
-                            : 'You owe ',
+                        text: friend.closingBalance > 0
+                            ? 'You lent'
+                            : 'You borrow',
                         style: const TextStyle(color: Color(0xFF6B7280)),
                       ),
                       TextSpan(
@@ -478,12 +483,466 @@ class _ReceivedBubble extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Settled banner
+// Settled banner  (centre-aligned card — tappable for details)
 // ─────────────────────────────────────────────────────────────────────────────
 class _SettledBanner extends StatelessWidget {
-  final String amount;
+  final TxMessage msg;
+  final BuildContext context;
 
-  const _SettledBanner({required this.amount});
+  const _SettledBanner({required this.msg, required this.context});
+
+  @override
+  Widget build(BuildContext ctx) {
+    const teal = Color(0xFF00D4AA);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 12.h),
+      child: Center(
+        child: GestureDetector(
+          onTap: () => _showTxDetailModal(context, msg),
+          child: Container(
+            constraints: BoxConstraints(maxWidth: MediaQuery.of(ctx).size.width * 0.78),
+            padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 13.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0E1A16),
+              borderRadius: BorderRadius.circular(22.r),
+              border: Border.all(
+                color: teal.withValues(alpha: 0.28),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: teal.withValues(alpha: 0.12),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon container
+                Container(
+                  width: 34.w,
+                  height: 34.h,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00A37A), teal],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(10.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: teal.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.check_rounded,
+                    size: 18.sp,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                // Text
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Settled',
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                        color: teal.withValues(alpha: 0.75),
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    SizedBox(height: 1.h),
+                    Text(
+                      msg.amount,
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    if (msg.note.isNotEmpty) ...[
+                      SizedBox(height: 1.h),
+                      Text(
+                        msg.note,
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: Colors.white.withValues(alpha: 0.50),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                SizedBox(width: 12.w),
+                // Tap hint
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18.sp,
+                  color: teal.withValues(alpha: 0.50),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Transaction Detail Modal
+// ─────────────────────────────────────────────────────────────────────────────
+void _showTxDetailModal(BuildContext context, TxMessage msg) {
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Transaction Detail',
+    barrierColor: Colors.transparent,
+    transitionDuration: const Duration(milliseconds: 420),
+    pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+    transitionBuilder: (ctx, anim, secAnim, child) {
+      final curved = CurvedAnimation(
+        parent: anim,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: _TxDetailOverlay(msg: msg, animation: curved),
+      );
+    },
+  );
+}
+
+class _TxDetailOverlay extends StatelessWidget {
+  final TxMessage msg;
+  final Animation<double> animation;
+
+  const _TxDetailOverlay({required this.msg, required this.animation});
+
+  @override
+  Widget build(BuildContext context) {
+    final isSettled = msg.type == TxType.settled;
+    final isLent = msg.type == TxType.lent;
+
+    final primaryColor = isSettled
+        ? const Color(0xFF00D4AA)
+        : isLent
+            ? const Color(0xFF00E676)
+            : const Color(0xFFFF6666);
+
+    final gradientColors = isSettled
+        ? [
+            const Color(0xFF004D38),
+            const Color(0xFF007A5E),
+            const Color(0xFF00D4AA),
+          ]
+        : isLent
+            ? [
+                const Color(0xFF00603A),
+                const Color(0xFF00A854),
+                const Color(0xFF00E676),
+              ]
+            : [
+                const Color(0xFFB40000),
+                const Color(0xFFF22323),
+                const Color(0xFFFF6666),
+              ];
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pop(),
+      child: Material(
+        color: Colors.transparent,
+        child: Stack(
+          children: [
+            // Blurred backdrop
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(
+                  color: const Color(0xFF0D0F14).withValues(alpha: 0.72),
+                ),
+              ),
+            ),
+            // Card
+            Center(
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.12),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.88, end: 1.0).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutBack,
+                    ),
+                  ),
+                  child: GestureDetector(
+                    onTap: () {}, // prevent dismiss on card tap
+                    child: _TxDetailCard(
+                      msg: msg,
+                      primaryColor: primaryColor,
+                      gradientColors: gradientColors,
+                      isLent: isLent,
+                      isSettled: isSettled,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TxDetailCard extends StatelessWidget {
+  final TxMessage msg;
+  final Color primaryColor;
+  final List<Color> gradientColors;
+  final bool isLent;
+  final bool isSettled;
+
+  const _TxDetailCard({
+    required this.msg,
+    required this.primaryColor,
+    required this.gradientColors,
+    required this.isLent,
+    this.isSettled = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 24.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141720),
+        borderRadius: BorderRadius.circular(28.r),
+        border: Border.all(
+          color: primaryColor.withValues(alpha: 0.18),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withValues(alpha: 0.18),
+            blurRadius: 48,
+            spreadRadius: 0,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.60),
+            blurRadius: 32,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // ── Gradient Header ─────────────────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 28.h),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: const [0.0, 0.5, 1.0],
+              ),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(28.r),
+                topRight: Radius.circular(28.r),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Type badge
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 5.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.20),
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isSettled
+                            ? Icons.check_circle_rounded
+                            : isLent
+                                ? Icons.arrow_upward_rounded
+                                : Icons.arrow_downward_rounded,
+                        size: 12.sp,
+                        color: Colors.white,
+                      ),
+                      SizedBox(width: 5.w),
+                      Text(
+                        isSettled ? 'SETTLED' : isLent ? 'LENT' : 'BORROWED',
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 14.h),
+                // Amount
+                Text(
+                  msg.amount,
+                  style: TextStyle(
+                    fontSize: 38.sp,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -1.5,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+                if (msg.note.isNotEmpty) ...[
+                  SizedBox(height: 6.h),
+                  Text(
+                    msg.note,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: Colors.white.withValues(alpha: 0.80),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          // ── Details body ─────────────────────────────────────────────────
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 24.w,
+            ).copyWith(top: 22.h, bottom: 8.h),
+            child: Column(
+              children: [
+                _DetailRow(
+                  icon: Icons.calendar_today_rounded,
+                  label: 'Transaction Date',
+                  value: DateFormat('EEE, dd MMM yyyy').format(msg.whenDate),
+                  iconColor: primaryColor,
+                ),
+                _DetailDivider(),
+                _DetailRow(
+                  icon: Icons.access_time_rounded,
+                  label: 'Time',
+                  value: msg.time,
+                  iconColor: primaryColor,
+                ),
+                if (msg.returnDate != null) ...[
+                  _DetailDivider(),
+                  _DetailRow(
+                    icon: Icons.event_available_rounded,
+                    label: 'Expected Return',
+                    value: DateFormat(
+                      'EEE, dd MMM yyyy',
+                    ).format(msg.returnDate!),
+                    iconColor: primaryColor,
+                    highlight: true,
+                    highlightColor: primaryColor,
+                  ),
+                ],
+                _DetailDivider(),
+                _DetailRow(
+                  icon: msg.isRead
+                      ? Icons.done_all_rounded
+                      : Icons.access_time_rounded,
+                  label: 'Status',
+                  value: msg.isRead ? 'Confirmed' : 'Pending',
+                  iconColor: msg.isRead
+                      ? const Color(0xFF00E676)
+                      : const Color(0xFFFFB74D),
+                  valueColor: msg.isRead
+                      ? const Color(0xFF00E676)
+                      : const Color(0xFFFFB74D),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Close button ─────────────────────────────────────────────────
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 24.w,
+            ).copyWith(bottom: 24.h, top: 16.h),
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Container(
+                width: double.infinity,
+                height: 48.h,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1D26),
+                  borderRadius: BorderRadius.circular(14.r),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    'Close',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF9CA3AF),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color iconColor;
+  final bool highlight;
+  final Color? highlightColor;
+  final Color? valueColor;
+
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.iconColor,
+    this.highlight = false,
+    this.highlightColor,
+    this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -491,51 +950,73 @@ class _SettledBanner extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: 10.h),
       child: Row(
         children: [
-          Expanded(
-            child: Divider(
-              color: Colors.white.withValues(alpha: 0.06),
-              thickness: 1,
-            ),
-          ),
-          SizedBox(width: 10.w),
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+            width: 36.w,
+            height: 36.h,
             decoration: BoxDecoration(
-              color: const Color(0xFF0D1E14),
-              borderRadius: BorderRadius.circular(20.r),
-              border: Border.all(
-                color: const Color(0xFF00E676).withValues(alpha: 0.20),
-              ),
+              color: iconColor.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10.r),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Icon(icon, size: 16.sp, color: iconColor),
+          ),
+          SizedBox(width: 14.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.check_circle_rounded,
-                  size: 14.sp,
-                  color: const Color(0xFF00E676),
-                ),
-                SizedBox(width: 6.w),
                 Text(
-                  'You settled $amount',
+                  label,
                   style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF00E676),
+                    fontSize: 11.sp,
+                    color: const Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    color: valueColor ?? Colors.white,
                   ),
                 ),
               ],
             ),
           ),
-          SizedBox(width: 10.w),
-          Expanded(
-            child: Divider(
-              color: Colors.white.withValues(alpha: 0.06),
-              thickness: 1,
+          if (highlight && highlightColor != null)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+              decoration: BoxDecoration(
+                color: highlightColor!.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(
+                  color: highlightColor!.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Text(
+                'Due',
+                style: TextStyle(
+                  fontSize: 10.sp,
+                  fontWeight: FontWeight.w700,
+                  color: highlightColor,
+                  letterSpacing: 0.5,
+                ),
+              ),
             ),
-          ),
         ],
       ),
+    );
+  }
+}
+
+class _DetailDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Divider(
+      color: Colors.white.withValues(alpha: 0.05),
+      thickness: 1,
+      height: 1,
     );
   }
 }

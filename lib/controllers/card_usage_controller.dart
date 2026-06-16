@@ -1,3 +1,6 @@
+import 'package:expenso/controllers/friends_store_controller.dart';
+import 'package:expenso/models/friend.dart';
+import 'package:expenso/repositories/friends_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -7,25 +10,12 @@ import 'package:get/get.dart';
 enum CardEntryType { used, paid }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Simple person model (reuses Friends shape, kept standalone here)
-// ─────────────────────────────────────────────────────────────────────────────
-class CardUser {
-  final String name;
-  final String number;
-
-  CardUser({required this.name, required this.number});
-
-  String get initials {
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    return name.isNotEmpty ? name[0].toUpperCase() : '?';
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Controller
 // ─────────────────────────────────────────────────────────────────────────────
 class CardUsageController extends GetxController {
+  // ── Global friends cache (shared, fetched once app-wide) ───────────────────
+  final FriendsStore _friendsStore = FriendsStore.instance;
+  final FriendsRepository _friendsRepo = Get.put(FriendsRepository());
   // ── Entry type ───────────────────────────────────────────────────────────
   final selectedType = CardEntryType.used.obs;
   bool get isUsed => selectedType.value == CardEntryType.used;
@@ -34,16 +24,11 @@ class CardUsageController extends GetxController {
   final amountController = TextEditingController();
   final amount = ''.obs;
 
-  // ── Who used (only for "Used") ────────────────────────────────────────────
-  final selectedUser = Rxn<CardUser>();
+  // ── Who used (only for "Used") — backed by the global friends cache ────────
+  final selectedUser = Rxn<Friends>();
 
-  final users = <CardUser>[
-    CardUser(name: 'Arjun Mehta', number: '+91 98765 43210'),
-    CardUser(name: 'Priya Shah', number: '+91 91234 56789'),
-    CardUser(name: 'Rohit Verma', number: '+91 87654 32109'),
-    CardUser(name: 'Sneha Kapoor', number: '+91 76543 21098'),
-    CardUser(name: 'Karan Patel', number: '+91 65432 10987'),
-  ].obs;
+  /// Live view of the shared friends list (no per-screen fetch).
+  RxList<Friends> get users => _friendsStore.friends;
 
   // add-person form
   final addNameController = TextEditingController();
@@ -54,7 +39,7 @@ class CardUsageController extends GetxController {
   final searchController = TextEditingController();
   final searchQuery = ''.obs;
 
-  List<CardUser> get filteredUsers {
+  List<Friends> get filteredUsers {
     final q = searchQuery.value.trim().toLowerCase();
     if (q.isEmpty) return users;
     return users
@@ -64,7 +49,7 @@ class CardUsageController extends GetxController {
 
   void onSearchChanged(String v) => searchQuery.value = v;
 
-  void selectUser(CardUser u) {
+  void selectUser(Friends u) {
     selectedUser.value = u;
     searchController.clear();
     searchQuery.value = '';
@@ -137,7 +122,7 @@ class CardUsageController extends GetxController {
     usageDate.value = null;
   }
 
-  void addUser() {
+  Future<void> addUser() async {
     final name = addNameController.text.trim();
     final phone = addPhoneController.text.trim();
     if (name.isEmpty) {
@@ -152,12 +137,39 @@ class CardUsageController extends GetxController {
       );
       return;
     }
+
     isAddingUser.value = true;
-    Future.delayed(const Duration(milliseconds: 350), () {
-      users.add(CardUser(name: name, number: phone.isEmpty ? '—' : phone));
+    try {
+      // Avoid duplicates when a phone is provided.
+      if (phone.isNotEmpty && await _friendsRepo.friendExistsByPhone(phone)) {
+        Get.snackbar(
+          'Already Added',
+          'A contact with this phone number already exists.',
+          backgroundColor: const Color(0xFF1F1212),
+          colorText: const Color(0xFFFFB74D),
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 14,
+        );
+        return;
+      }
+
+      final linkedUserId = phone.isNotEmpty
+          ? await _friendsRepo.findLinkedUserId(phone)
+          : null;
+
+      final newFriend = await _friendsRepo.addFriend(
+        name: name,
+        phone: phone,
+        linkedUserId: linkedUserId,
+      );
+
+      // Push into the shared cache — visible instantly everywhere.
+      _friendsStore.cacheFriend(newFriend);
+      selectedUser.value = newFriend;
+
       addNameController.clear();
       addPhoneController.clear();
-      isAddingUser.value = false;
       Get.back();
       Get.snackbar(
         'Added ✓',
@@ -168,7 +180,19 @@ class CardUsageController extends GetxController {
         margin: const EdgeInsets.all(16),
         borderRadius: 14,
       );
-    });
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to add person: $e',
+        backgroundColor: const Color(0xFF1F1212),
+        colorText: const Color(0xFFFF5252),
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 14,
+      );
+    } finally {
+      isAddingUser.value = false;
+    }
   }
 
   void onConfirm() {
@@ -214,6 +238,8 @@ class CardUsageController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Load the shared friends list once (no-op if already cached elsewhere).
+    _friendsStore.ensureLoaded();
     // amountController.addListener(() => amount.value = amountController.text);
     // noteController.addListener(() => note.value = noteController.text);
   }

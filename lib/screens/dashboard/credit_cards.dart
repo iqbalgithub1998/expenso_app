@@ -664,7 +664,7 @@ class _AddCardSheet extends StatelessWidget {
             ),
             SizedBox(height: 3.h),
             Text(
-              'Tap any field on the card to edit',
+              'Edit the card, pick a colour, then add limit & balance',
               style: TextStyle(fontSize: 12.sp, color: const Color(0xFF6B7280)),
             ),
 
@@ -795,11 +795,12 @@ class _AddCardSheet extends StatelessWidget {
                         ),
                         SizedBox(height: 8.h),
 
-                        // ── Row 3: Due date inline ─────────────────────────
+                        // ── Row 3: Billing + Due date inline ──────────────
                         Row(
                           children: [
+                            // Billing day
                             Text(
-                              'DUE DATE',
+                              'BILLING',
                               style: TextStyle(
                                 fontSize: 8.sp,
                                 fontWeight: FontWeight.w600,
@@ -807,9 +808,44 @@ class _AddCardSheet extends StatelessWidget {
                                 letterSpacing: 1,
                               ),
                             ),
-                            SizedBox(width: 8.w),
+                            SizedBox(width: 6.w),
                             SizedBox(
-                              width: 48.w,
+                              width: 30.w,
+                              child: _CardTextField(
+                                controller: c.billingController,
+                                hint: '--',
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(2),
+                                ],
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                                hintStyle: TextStyle(
+                                  fontSize: 12.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white.withValues(alpha: 0.45),
+                                ),
+                                onChanged: c.onBillingChanged,
+                              ),
+                            ),
+                            SizedBox(width: 16.w),
+                            // Due day
+                            Text(
+                              'DUE',
+                              style: TextStyle(
+                                fontSize: 8.sp,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white.withValues(alpha: 0.6),
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            SizedBox(width: 6.w),
+                            SizedBox(
+                              width: 30.w,
                               child: _CardTextField(
                                 controller: c.paymentController,
                                 hint: '--',
@@ -843,49 +879,93 @@ class _AddCardSheet extends StatelessWidget {
             SizedBox(height: 16.h),
 
             // ── Theme picker ───────────────────────────────────────────────
-            Obx(
-              () => Row(
-                children: List.generate(
-                  CreditCardsController.cardThemes.length,
-                  (i) {
-                    final isSelected = c.selectedTheme.value == i;
+            SizedBox(
+              height: 36.w,
+              child: Obx(() {
+                // Read the observable synchronously so Obx tracks it.
+                final selected = c.selectedTheme.value;
+                return ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemCount: CreditCardsController.cardThemes.length,
+                  itemBuilder: (context, i) {
+                    final isSelected = selected == i;
                     return GestureDetector(
                       onTap: () => c.selectTheme(i),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: EdgeInsets.only(right: 10.w),
-                        width: isSelected ? 32.w : 26.w,
-                        height: isSelected ? 32.w : 26.w,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: CreditCardsController.cardThemes[i],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                  width: 2.5,
-                                )
-                              : Border.all(color: Colors.transparent, width: 0),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: CreditCardsController
-                                        .cardThemes[i]
-                                        .first
-                                        .withValues(alpha: 0.45),
-                                    blurRadius: 10,
+                      child: Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: EdgeInsets.only(right: 10.w),
+                          width: isSelected ? 32.w : 26.w,
+                          height: isSelected ? 32.w : 26.w,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: CreditCardsController.cardThemes[i],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: BoxShape.circle,
+                            border: isSelected
+                                ? Border.all(
+                                    color: Colors.white.withValues(alpha: 0.6),
+                                    width: 2.5,
+                                  )
+                                : Border.all(
+                                    color: Colors.transparent,
+                                    width: 0,
                                   ),
-                                ]
-                              : [],
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: CreditCardsController
+                                          .cardThemes[i]
+                                          .first
+                                          .withValues(alpha: 0.45),
+                                      blurRadius: 10,
+                                    ),
+                                  ]
+                                : [],
+                          ),
                         ),
                       ),
                     );
                   },
-                ),
+                );
+              }),
+            ),
+
+            SizedBox(height: 24.h),
+
+            // ── Credit limit + current balance ─────────────────────────────
+            _DarkFormField(
+              label: 'Credit Limit',
+              hint: 'e.g. 15000',
+              icon: Icons.account_balance_wallet_outlined,
+              iconColor: const Color(0xFF00E676),
+              controller: c.limitController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
               ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
+              onChanged: c.onLimitChanged,
+            ),
+            SizedBox(height: 12.h),
+            _DarkFormField(
+              label: 'Current Balance',
+              hint: 'e.g. 4120.45 (0 if new)',
+              icon: Icons.payments_outlined,
+              iconColor: const Color(0xFFFF5252),
+              controller: c.balanceController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
+              onChanged: c.onBalanceChanged,
             ),
 
             SizedBox(height: 28.h),

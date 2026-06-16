@@ -90,6 +90,8 @@ class FriendsRepository extends GetxController {
         newClosingBalance = friend.closingBalance + amount;
       }
     }
+    print(friend.closingBalance);
+    print(newClosingBalance);
     await _client
         .from('friends')
         .update({'closing_balance': newClosingBalance})
@@ -111,5 +113,21 @@ class FriendsRepository extends GetxController {
 
     return List<Map<String, dynamic>>.from(response as List<dynamic>);
   }
-}
 
+  Future<Map<String, double>> fetchNetBalance() async {
+    final data = await Supabase.instance.client.rpc(
+      'get_balance_summary',
+      params: {'p_owner_id': _currentUserId},
+    );
+
+    final totalPositive = data[0]['total_positive'] ?? 0.0;
+    final totalNegative = data[0]['total_negative'] ?? 0.0;
+
+    print('Total Positive: $totalPositive');
+    print('Total Negative: $totalNegative');
+    return {
+      "lend": totalNegative.toDouble(),
+      "borrow": totalPositive.toDouble(),
+    };
+  }
+}

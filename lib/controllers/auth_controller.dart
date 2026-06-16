@@ -122,7 +122,6 @@ class AuthController extends GetxController {
         'email': registerEmail.text.trim(),
       };
 
-      // Save additional user data in users table
       await Supabase.instance.client.from('user_profile').insert(userObj);
 
       AuthRepository.instance.user = UserModel.fromJson(userObj);

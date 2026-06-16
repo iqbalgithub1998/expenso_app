@@ -1,3 +1,4 @@
+import 'package:expenso/controllers/friends_store_controller.dart';
 import 'package:expenso/models/friend.dart';
 import 'package:expenso/models/lend_borrow_transaction_model.dart' as model;
 import 'package:expenso/repositories/friends_repository.dart';
@@ -19,10 +20,16 @@ enum ContactFilter { all, lent, borrowed, settled }
 // Controller
 // ─────────────────────────────────────────────────────────────────────────────
 class LendBorrowController extends GetxController {
+  static LendBorrowController instance = Get.find();
   // ── Lend/Borrow Screen ────────────────────────────────────────────────────
   final RxBool showAllLedgers = false.obs;
+
   final RxBool isLoadingTransactions = false.obs;
   final RxList<TxDay> friendTxDays = <TxDay>[].obs;
+
+  final RxDouble netLend = 0.0.obs;
+  final RxDouble netBorrow = 0.0.obs;
+  final RxDouble netBalance = 0.0.obs;
 
   void toggleShowAllLedgers() => showAllLedgers.toggle();
 
@@ -39,9 +46,16 @@ class LendBorrowController extends GetxController {
   // ── Repository ───────────────────────────────────────────────────────────
   final _friendsRepo = Get.put(FriendsRepository());
 
-  // Pagination
-  static const int pageSize = 6;
-  final RxList<Friends> displayedFriends = <Friends>[].obs;
+  // ── Global friends cache (single source of truth, shared app-wide) ─────────
+  final FriendsStore _friendsStore = FriendsStore.instance;
+
+  // ── Pagination ────────────────────────────────────────────────────────────
+  static const int pageSize = 10;
+  final ScrollController scrollController = ScrollController();
+  final List<Friends> _allFriends =
+      []; // local page source, synced from _friendsStore
+  final RxList<Friends> displayedFriends =
+      <Friends>[].obs; // rendered page-window
   final RxBool isLoadingMore = false.obs;
   final RxBool hasMore = true.obs;
   final RxBool showingFavourites = false.obs;
@@ -76,17 +90,66 @@ class LendBorrowController extends GetxController {
     Get.to(() => LendBorrowTransaction(contact: f));
   }
 
+  @override
+  void onInit() {
+    super.onInit();
+    scrollController.addListener(_onScroll);
+    // Re-sync the paged list whenever the global friends cache changes
+    // (e.g. a friend added from the Card Usage screen).
+    ever(_friendsStore.friends, (_) {
+      _allFriends
+        ..clear()
+        ..addAll(_friendsStore.friends);
+      _resetPagination();
+    });
+    loadFriends();
+    loadBalance();
+  }
+
+  void _onScroll() {
+    if (scrollController.position.pixels >=
+        scrollController.position.maxScrollExtent - 160) {
+      loadMoreContacts();
+    }
+  }
+
   void onFavouritesTap() {
     showingFavourites.value = !showingFavourites.value;
   }
 
-  // ── Load friends from Supabase ────────────────────────────────────────────
+  // - load net balance ----------------------------------------------------
+
+  Future<void> loadBalance() async {
+    try {
+      final balance = await _friendsRepo.fetchNetBalance();
+      print(balance);
+      netLend.value = balance['lend'] ?? 0.0;
+      netBorrow.value = balance['borrow'] ?? 0.0;
+      netBalance.value = netLend.value + netBorrow.value;
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to load balance: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF1A1D26),
+        colorText: const Color(0xFFEF4444),
+        duration: const Duration(seconds: 3),
+      );
+    }
+  }
+
+  // ── Force-refresh the shared cache (after a balance-changing mutation) ─────
+  Future<void> refreshFriends() => _friendsStore.loadFriends();
+
+  // ── Load friends from the global cache (fetches only once) ─────────────────
   Future<void> loadFriends() async {
     isFetchingFriends.value = true;
     try {
-      final friends = await _friendsRepo.fetchFriends();
-      displayedFriends.value = friends;
-      print(displayedFriends);
+      await _friendsStore.ensureLoaded();
+      _allFriends
+        ..clear()
+        ..addAll(_friendsStore.friends);
+      _resetPagination();
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -101,40 +164,39 @@ class LendBorrowController extends GetxController {
     }
   }
 
-  void initContactsPage() {
+  void initContactsPage() => _resetPagination();
+
+  // ── Filtered + searched slice from _allFriends ────────────────────────────
+  List<Friends> get _filteredContacts {
+    final q = searchQuery.value.trim().toLowerCase();
+    return _allFriends.where((f) {
+      // Search by name or number
+      if (q.isNotEmpty) {
+        if (!f.name.toLowerCase().contains(q) &&
+            !f.number.toLowerCase().contains(q)) {
+          return false;
+        }
+      }
+      // Filter by type
+      switch (activeFilter.value) {
+        case ContactFilter.lent:
+          return f.closingBalance > 0;
+        case ContactFilter.borrowed:
+          return f.closingBalance < 0;
+        case ContactFilter.settled:
+          return f.closingBalance == 0;
+        case ContactFilter.all:
+          return true;
+      }
+    }).toList();
+  }
+
+  // ── Pagination helpers ────────────────────────────────────────────────────
+  void _resetPagination() {
     _currentPage = 0;
     displayedFriends.clear();
     hasMore.value = true;
     _loadNextPage();
-  }
-
-  // ── Build filtered + searched list from _allFriends ───────────────────────
-  List<Friends> get _filteredContacts {
-    return displayedFriends;
-    // return displayedFriends
-    //     .where((f) {
-    //       // search
-    //       if (searchQuery.isNotEmpty) {
-    //         final q = searchQuery.value.toLowerCase();
-    //         if (!f.name.toLowerCase().contains(q) &&
-    //             !f.number.toLowerCase().contains(q)) {
-    //           return false;
-    //         }
-    //       }
-    //       // filter
-    //       switch (activeFilter.value) {
-    //         case ContactFilter.lent:
-    //           return f.closingBalance > 0;
-    //         case ContactFilter.borrowed:
-    //           return f.closingBalance < 0;
-    //         case ContactFilter.settled:
-    //           return f.closingBalance == 0;
-    //         case ContactFilter.all:
-    //           return true;
-    //       }
-    //     })
-    //     .map(_toContactData)
-    //     .toList();
   }
 
   void _loadNextPage() {
@@ -162,7 +224,7 @@ class LendBorrowController extends GetxController {
       isLoadingTransactions.value = true;
       final rawTransactions = await _friendsRepo.fetchTransactionsByFriendId(
         friendId: friendId,
-        limit: 50,
+        limit: 20,
         offset: 0,
       );
 
@@ -189,10 +251,9 @@ class LendBorrowController extends GetxController {
       }
 
       final List<TxDay> days = grouped.entries.map((entry) {
-        return TxDay(
-          dateLabel: entry.key,
-          messages: entry.value.reversed.toList(),
-        );
+        final sorted = entry.value
+          ..sort((a, b) => b.whenDate.compareTo(a.whenDate)); // newest first
+        return TxDay(dateLabel: entry.key, messages: sorted);
       }).toList();
 
       friendTxDays.value = days;
@@ -253,12 +314,12 @@ class LendBorrowController extends GetxController {
 
   void setFilter(ContactFilter filter) {
     activeFilter.value = filter;
-    initContactsPage();
+    _resetPagination();
   }
 
   void onSearchChanged(String value) {
     searchQuery.value = value;
-    initContactsPage();
+    _resetPagination();
   }
 
   Future<void> addContact() async {
@@ -290,15 +351,15 @@ class LendBorrowController extends GetxController {
       final linkedUserId = await _friendsRepo.findLinkedUserId(phone);
 
       // 3. Insert the new friend into Supabase
-      await _friendsRepo.addFriend(
+      final newFriend = await _friendsRepo.addFriend(
         name: name,
         phone: phone,
         linkedUserId: linkedUserId,
       );
 
-      // 4. Reload friends list from Supabase and refresh UI
-      await loadFriends();
-      initContactsPage();
+      // 4. Push into the global cache — the listener re-pages the UI and
+      //    other screens (e.g. Card Usage) see the new friend instantly.
+      _friendsStore.cacheFriend(newFriend);
 
       nameController.clear();
       phoneController.clear();
@@ -369,6 +430,8 @@ class LendBorrowController extends GetxController {
   void onClose() {
     nameController.dispose();
     phoneController.dispose();
+    scrollController.removeListener(_onScroll);
+    scrollController.dispose();
     super.onClose();
   }
 }
