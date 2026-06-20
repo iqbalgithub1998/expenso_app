@@ -1,4 +1,5 @@
 import 'package:expenso/controllers/credit_card_controller.dart';
+import 'package:expenso/models/credit_card_model.dart';
 import 'package:expenso/screens/dashboard/credit_card_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -95,9 +96,14 @@ class CreditCardsScreen extends StatelessWidget {
               ),
             ),
 
-            // ── Card list ───────────────────────────────────────────────────
-            Obx(
-              () => SliverList(
+            // ── Card list (or empty state) ──────────────────────────────────
+            Obx(() {
+              if (c.cards.isEmpty) {
+                return SliverToBoxAdapter(
+                  child: _EmptyCardsState(controller: c),
+                );
+              }
+              return SliverList(
                 delegate: SliverChildBuilderDelegate((context, index) {
                   final card = c.cards[index];
                   return Padding(
@@ -110,59 +116,57 @@ class CreditCardsScreen extends StatelessWidget {
                     child: _CreditCardTile(card: card),
                   );
                 }, childCount: c.cards.length),
-              ),
-            ),
+              );
+            }),
 
-            // ── Payment schedule ────────────────────────────────────────────
+            // ── Payment schedule (only cards inside their payment window) ────
             SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Section header
-                    Row(
-                      children: [
-                        Container(
-                          width: 4.w,
-                          height: 18.h,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF00C853), Color(0xFF00E676)],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                            borderRadius: BorderRadius.circular(2.r),
-                          ),
-                        ),
-                        SizedBox(width: 10.w),
-                        Text(
-                          'Payment Schedule',
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 14.h),
-                    Obx(
-                      () => Column(
-                        children: c.payments
-                            .map(
-                              (p) => Padding(
-                                padding: EdgeInsets.only(bottom: 10.h),
-                                child: _PaymentTile(payment: p),
+              child: Obx(() {
+                final due = c.duePayments;
+                if (due.isEmpty) return const SizedBox.shrink();
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Section header
+                      Row(
+                        children: [
+                          Container(
+                            width: 4.w,
+                            height: 18.h,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF00C853), Color(0xFF00E676)],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
                               ),
-                            )
-                            .toList(),
+                              borderRadius: BorderRadius.circular(2.r),
+                            ),
+                          ),
+                          SizedBox(width: 10.w),
+                          Text(
+                            'Payment Schedule',
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                      SizedBox(height: 14.h),
+                      ...due.map(
+                        (card) => Padding(
+                          padding: EdgeInsets.only(bottom: 10.h),
+                          child: _PaymentTile(card: card, controller: c),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ),
 
             // ── Bottom padding ──────────────────────────────────────────────
@@ -303,33 +307,37 @@ class _StickyAppBar extends SliverPersistentHeaderDelegate {
 // Credit Card Tile
 // ─────────────────────────────────────────────────────────────────────────────
 class _CreditCardTile extends StatelessWidget {
-  final CardModel card;
+  final CreditCardModel card;
   const _CreditCardTile({required this.card});
 
   @override
   Widget build(BuildContext context) {
     final labelColor = Colors.white.withValues(alpha: 0.55);
+    final gradient =
+        CreditCardsController.cardThemes[(int.tryParse(card.color.toString()) ??
+                0)
+            .clamp(0, CreditCardsController.cardThemes.length - 1)];
 
     return Stack(
       children: [
         InkWell(
           onTap: () => Get.to(
-              () => CreditCardDetailsScreen(),
-              arguments: {'paymentDueDate': card.paymentDueDate},
-            ),
+            () => CreditCardDetailsScreen(card: card),
+            arguments: {"card": card, 'paymentDueDate': card.paymentDueDate},
+          ),
           child: Container(
             width: double.infinity,
             padding: EdgeInsets.all(22.w),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: card.gradient,
+                colors: gradient,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24.r),
               boxShadow: [
                 BoxShadow(
-                  color: card.gradient.first.withValues(alpha: 0.40),
+                  color: gradient.first.withValues(alpha: 0.40),
                   blurRadius: 22,
                   spreadRadius: -4,
                   offset: const Offset(0, 10),
@@ -487,17 +495,123 @@ class _CreditCardTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Empty State (no cards yet)
+// ─────────────────────────────────────────────────────────────────────────────
+class _EmptyCardsState extends StatelessWidget {
+  final CreditCardsController controller;
+  const _EmptyCardsState({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 60.h, 20.w, 0),
+      child: Column(
+        children: [
+          Container(
+            width: 96.w,
+            height: 96.w,
+            decoration: BoxDecoration(
+              color: const Color(0xFF141720),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Icon(
+              Icons.credit_card_off_outlined,
+              size: 42.sp,
+              color: const Color(0xFF4B5563),
+            ),
+          ),
+          SizedBox(height: 22.h),
+          Text(
+            'No cards yet',
+            style: TextStyle(
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: -0.4,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            'Add a credit card to track its balance,\nlimit and payment schedule.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13.sp,
+              height: 1.5,
+              color: const Color(0xFF6B7280),
+            ),
+          ),
+          SizedBox(height: 24.h),
+          GestureDetector(
+            onTap: () => showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => _AddCardSheet(controller: controller),
+            ),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 22.w, vertical: 13.h),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF00C853), Color(0xFF00E676)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF00E676).withValues(alpha: 0.30),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add_rounded, color: Colors.white, size: 20.sp),
+                  SizedBox(width: 8.w),
+                  Text(
+                    'Add your first card',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Payment Tile
 // ─────────────────────────────────────────────────────────────────────────────
 class _PaymentTile extends StatelessWidget {
-  final PaymentModel payment;
-  const _PaymentTile({required this.payment});
+  final CreditCardModel card;
+  final CreditCardsController controller;
+  const _PaymentTile({required this.card, required this.controller});
 
   @override
   Widget build(BuildContext context) {
     final urgentRed = const Color(0xFFFF5252);
     final neutralCol = const Color(0xFF9CA3AF);
-    final accentColor = payment.isUrgent ? urgentRed : neutralCol;
+
+    final today = DateTime.now().day;
+    final dueDay = controller.dayOf(card.paymentDueDate) ?? today;
+    final daysLeft = (dueDay - today).clamp(0, 31);
+    final isUrgent = daysLeft <= 3;
+    final accentColor = isUrgent ? urgentRed : neutralCol;
+
+    final dueLabel = daysLeft == 0
+        ? 'Due today • ${card.paymentDueDate}'
+        : 'Due in $daysLeft day${daysLeft == 1 ? '' : 's'} • ${card.paymentDueDate}';
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
@@ -505,7 +619,7 @@ class _PaymentTile extends StatelessWidget {
         color: const Color(0xFF141720),
         borderRadius: BorderRadius.circular(18.r),
         border: Border.all(
-          color: payment.isUrgent
+          color: isUrgent
               ? urgentRed.withValues(alpha: 0.25)
               : Colors.white.withValues(alpha: 0.06),
         ),
@@ -528,13 +642,13 @@ class _PaymentTile extends StatelessWidget {
             width: 44.w,
             height: 44.h,
             decoration: BoxDecoration(
-              color: payment.isUrgent
+              color: isUrgent
                   ? urgentRed.withValues(alpha: 0.12)
                   : const Color(0xFF1A1D26),
               borderRadius: BorderRadius.circular(13.r),
             ),
             child: Icon(
-              payment.isUrgent
+              isUrgent
                   ? Icons.warning_amber_rounded
                   : Icons.receipt_long_outlined,
               size: 20.sp,
@@ -549,7 +663,7 @@ class _PaymentTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  payment.cardName,
+                  '${card.name} •••• ${card.last4}',
                   style: TextStyle(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w700,
@@ -559,7 +673,7 @@ class _PaymentTile extends StatelessWidget {
                 ),
                 SizedBox(height: 3.h),
                 Text(
-                  payment.dueLabel,
+                  dueLabel,
                   style: TextStyle(
                     fontSize: 11.sp,
                     color: const Color(0xFF4B5563),
@@ -570,16 +684,16 @@ class _PaymentTile extends StatelessWidget {
             ),
           ),
 
-          // Amount + badge
+          // Balance + badge
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                payment.formattedDue,
+                '₹${card.formattedBalance}',
                 style: TextStyle(
                   fontSize: 15.sp,
                   fontWeight: FontWeight.w800,
-                  color: payment.isUrgent ? urgentRed : Colors.white,
+                  color: isUrgent ? urgentRed : Colors.white,
                   letterSpacing: -0.3,
                 ),
               ),
@@ -594,7 +708,7 @@ class _PaymentTile extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'MIN DUE',
+                  'BALANCE',
                   style: TextStyle(
                     fontSize: 8.sp,
                     fontWeight: FontWeight.w700,

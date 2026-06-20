@@ -1,115 +1,42 @@
+import 'dart:convert';
+
+import 'package:expenso/models/credit_card_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-// ── Models ────────────────────────────────────────────────────────────────────
-
-class CardModel {
-  final String name;
-  final String last4;
-  final double balance;
-  final double limit;
-  final List<Color> gradient;
-  final bool isDark;
-  final String billingDate;
-  final String paymentDueDate;
-
-  const CardModel({
-    required this.name,
-    required this.last4,
-    required this.balance,
-    required this.limit,
-    required this.gradient,
-    required this.isDark,
-    required this.billingDate,
-    required this.paymentDueDate,
-  });
-
-  double get usedPercent => (balance / limit).clamp(0.0, 1.0);
-  String get usedLabel => '${(usedPercent * 100).toStringAsFixed(1)}% USED';
-  String get limitLabel => 'LIMIT  ₹${(limit / 1000).toStringAsFixed(0)}K';
-
-  String get formattedBalance {
-    final parts = balance.toStringAsFixed(2).split('.');
-    final intPart = parts[0].replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]},',
-    );
-    return '$intPart.${parts[1]}';
-  }
-}
-
-class PaymentModel {
-  final String cardName;
-  final String last4;
-  final double minDue;
-  final String dueLabel;
-  final bool isUrgent;
-
-  const PaymentModel({
-    required this.cardName,
-    required this.last4,
-    required this.minDue,
-    required this.dueLabel,
-    required this.isUrgent,
-  });
-
-  String get formattedDue => '₹${minDue.toStringAsFixed(2)}';
-}
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 // ── Controller ────────────────────────────────────────────────────────────────
 
 class CreditCardsController extends GetxController {
   // ── Card list ─────────────────────────────────────────────────────────────
-  final cards = <CardModel>[
-    const CardModel(
-      name: 'Platinum Elite',
-      last4: '8024',
-      balance: 4120.45,
-      limit: 15000,
-      gradient: [Color(0xFF1C1C2E), Color(0xFF2D2D44)],
-      isDark: false,
-      billingDate: '5th',
-      paymentDueDate: '15th',
-    ),
-    const CardModel(
-      name: 'Obsidian Infinite',
-      last4: '4112',
-      balance: 8450.00,
-      limit: 70000,
-      gradient: [Color(0xFF1A1D26), Color(0xFF2A2D3A)],
-      isDark: true,
-      billingDate: '7th',
-      paymentDueDate: '14th',
-    ),
-    const CardModel(
-      name: 'Emerald Rewards',
-      last4: '9003',
-      balance: 1200.00,
-      limit: 10000,
-      gradient: [Color(0xFF00603A), Color(0xFF00E676)],
-      isDark: true,
-      billingDate: '1st',
-      paymentDueDate: '10th',
-    ),
-  ].obs;
+  final cards = <CreditCardModel>[].obs;
 
-  // ── Payment schedule ──────────────────────────────────────────────────────
-  final payments = <PaymentModel>[
-    const PaymentModel(
-      cardName: 'Obsidian Infinite',
-      last4: '4112',
-      minDue: 450.00,
-      dueLabel: 'Due in 7 days • Dec 14',
-      isUrgent: true,
-    ),
-    const PaymentModel(
-      cardName: 'Platinum Elite',
-      last4: '8024',
-      minDue: 120.00,
-      dueLabel: 'Due in 15 days • Dec 27',
-      isUrgent: false,
-    ),
-  ].obs;
+  // ── Derived state ─────────────────────────────────────────────────────────
+  bool get hasCards => cards.isNotEmpty;
+
+  @override
+  void onInit() {
+    fetchCards();
+    super.onInit();
+  }
+
+  /// Extracts the day-of-month from an ordinal label, e.g. "5th" → 5.
+  int? dayOf(int ordinal) {
+    final match = RegExp(r'\d+').firstMatch(ordinal.toString());
+    return match == null ? null : int.tryParse(match.group(0)!);
+  }
+
+  /// Cards currently inside their payment window — the bill has been generated
+  /// (billing day already passed this month) but the due day hasn't arrived yet.
+  List<CreditCardModel> get duePayments {
+    final today = DateTime.now().day;
+    return cards.where((card) {
+      final billing = dayOf(card.billingDate);
+      final due = dayOf(card.paymentDueDate);
+      if (billing == null || due == null) return false;
+      return billing < today && due >= today;
+    }).toList();
+  }
 
   // ── Active nav index ──────────────────────────────────────────────────────
   final activeNavIndex = 1.obs;
@@ -189,7 +116,7 @@ class CreditCardsController extends GetxController {
       last4Controller.text.length == 4 &&
       (double.tryParse(limitController.text.trim()) ?? 0) > 0;
 
-  void saveCard(BuildContext context) {
+  Future<void> saveCard(BuildContext context) async {
     if (!formIsValid) {
       Get.snackbar(
         'Incomplete',
@@ -203,34 +130,62 @@ class CreditCardsController extends GetxController {
       return;
     }
 
-    final theme = cardThemes[selectedTheme.value];
     final limit = double.tryParse(limitController.text.trim()) ?? 0;
     final balance = double.tryParse(balanceController.text.trim()) ?? 0;
-    cards.add(
-      CardModel(
-        name: nameController.text.trim(),
-        last4: last4Controller.text,
-        balance: balance,
-        limit: limit,
-        gradient: theme,
-        isDark: true,
-        billingDate: previewBilling.value,
-        paymentDueDate: previewPayment.value,
-      ),
-    );
+    final billingDay = int.tryParse(billingController.text.trim());
+    final paymentDay = int.tryParse(paymentController.text.trim());
 
-    _resetForm();
-    Navigator.of(context).pop();
+    try {
+      final userId = Supabase.instance.client.auth.currentUser!.id;
 
-    Get.snackbar(
-      'Card Added ✓',
-      '${nameController.text} ending in ${last4Controller.text} added.',
-      backgroundColor: const Color(0xFF0D1F15),
-      colorText: const Color(0xFF00E676),
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 14,
-    );
+      await Supabase.instance.client.from('credit_card').insert({
+        'user_id': userId,
+        'name': nameController.text.trim(),
+        'last4': last4Controller.text.trim(),
+        'balance': balance,
+        'card_limit': limit,
+        'color': selectedTheme.value.toString(),
+        'billing_date': billingDay,
+        'payment_due_date': paymentDay,
+      });
+
+      await fetchCards();
+
+      _resetForm();
+      Navigator.of(context).pop();
+
+      Get.snackbar(
+        'Card Added ✓',
+        '${nameController.text} ending in ${last4Controller.text} added.',
+        backgroundColor: const Color(0xFF0D1F15),
+        colorText: const Color(0xFF00E676),
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 14,
+      );
+    } on PostgrestException catch (e) {
+      Get.snackbar(
+        'Error',
+        e.message,
+        backgroundColor: const Color(0xFF1F1212),
+        colorText: const Color(0xFFFF5252),
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        borderRadius: 14,
+      );
+    }
+  }
+
+  Future<void> fetchCards() async {
+    final userId = Supabase.instance.client.auth.currentUser!.id;
+
+    final data = await Supabase.instance.client
+        .from('credit_card')
+        .select()
+        .eq('user_id', userId)
+        .order('created_at');
+    print(data);
+    cards.value = creditCardFromJson(jsonEncode(data));
   }
 
   void _resetForm() {

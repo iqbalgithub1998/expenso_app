@@ -996,7 +996,7 @@ class _AddUserSheet extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Add someone who used this card',
+                    'Add manually or sync from your phone',
                     style: TextStyle(
                       fontSize: 11.sp,
                       color: const Color(0xFF6B7280),
@@ -1006,7 +1006,76 @@ class _AddUserSheet extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 28.h),
+          SizedBox(height: 24.h),
+
+          // Sync from contacts
+          GestureDetector(
+            onTap: c.onSyncFromContacts,
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(vertical: 14.h),
+              decoration: BoxDecoration(
+                color: c.accentColor.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(14.r),
+                border: Border.all(
+                  color: c.accentColor.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.contacts_rounded,
+                    size: 18.sp,
+                    color: c.accentColor,
+                  ),
+                  SizedBox(width: 8.w),
+                  Text(
+                    'Sync from Phone Contacts',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                      color: c.accentColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          SizedBox(height: 20.h),
+
+          // OR divider
+          Row(
+            children: [
+              Expanded(
+                child: Divider(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  thickness: 1,
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12.w),
+                child: Text(
+                  'OR ADD MANUALLY',
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF4B5563),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Divider(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  thickness: 1,
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: 20.h),
           _SheetTextField(
             controller: c.addNameController,
             label: 'Full Name',

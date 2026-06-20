@@ -1,4 +1,5 @@
 import 'package:expenso/controllers/credit_card_detail_controller.dart';
+import 'package:expenso/models/credit_card_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -19,7 +20,9 @@ const _greenDim = Color(0xFF1B7A47);
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
 class CreditCardDetailsScreen extends StatelessWidget {
-  const CreditCardDetailsScreen({super.key});
+  const CreditCardDetailsScreen({super.key, required this.card});
+
+  final CreditCardModel card;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +30,7 @@ class CreditCardDetailsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: _bg,
-      floatingActionButton: _Fab(),
+      floatingActionButton: _Fab(cardId: card.id, controller: c),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,6 +38,7 @@ class CreditCardDetailsScreen extends StatelessWidget {
             _AppBar(),
             Expanded(
               child: SingleChildScrollView(
+                controller: c.scrollController,
                 padding: EdgeInsets.symmetric(horizontal: 20.w),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,10 +58,38 @@ class CreditCardDetailsScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 16.h),
 
-                    // Transaction groups
-                    ...CreditCardDetailsController.groups.map(
-                      (g) => _DayGroupWidget(group: g, controller: c),
-                    ),
+                    Obx(() {
+                      if (c.isLoading.value) {
+                        return Padding(
+                          padding: EdgeInsets.symmetric(vertical: 60.h),
+                          child: const Center(
+                            child: CircularProgressIndicator(color: _green),
+                          ),
+                        );
+                      }
+
+                      if (c.groups.isEmpty) {
+                        return const _EmptyActivity();
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ...c.groups.map(
+                            (g) => _DayGroupWidget(group: g, controller: c),
+                          ),
+                          if (c.isLoadingMore.value)
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16.h),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  color: _green,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    }),
                     SizedBox(height: 90.h),
                   ],
                 ),
@@ -343,6 +375,54 @@ class _CircularOverlay extends StatelessWidget {
   }
 }
 
+// ── Empty State ──────────────────────────────────────────────────────────────
+
+class _EmptyActivity extends StatelessWidget {
+  const _EmptyActivity();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 50.h),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              width: 72.w,
+              height: 72.w,
+              decoration: BoxDecoration(
+                color: _surface2,
+                shape: BoxShape.circle,
+                border: Border.all(color: _border),
+              ),
+              child: Icon(
+                Icons.receipt_long_outlined,
+                size: 32.sp,
+                color: _textSecondary,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'No transactions yet',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w800,
+                color: _textPrimary,
+              ),
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              'Your recent activity will show up here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12.sp, color: _textSecondary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── Day Group ──────────────────────────────────────────────────────────────────
 
 class _DayGroupWidget extends StatelessWidget {
@@ -554,10 +634,22 @@ class _TxRow extends StatelessWidget {
 // ── FAB ────────────────────────────────────────────────────────────────────────
 
 class _Fab extends StatelessWidget {
+  final String cardId;
+  final CreditCardDetailsController controller;
+
+  const _Fab({required this.cardId, required this.controller});
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Get.to(() => CardUsageScreen()),
+      onTap: () async {
+        final result = await Get.to(
+          () => CardUsageScreen(),
+          arguments: {"cardId": cardId},
+        );
+        if (result != null) {
+          controller.addTransaction(result);
+        }
+      },
       child: Container(
         width: 60.w,
         height: 60.w,
