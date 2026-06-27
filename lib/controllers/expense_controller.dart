@@ -261,15 +261,49 @@ class ExpenseController extends GetxController {
     for (final t in filteredTransactions.where((t) => t.isDebit)) {
       cats.update(
         t.title,
-        (v) =>
-            v +
-            (double.tryParse(t.amount.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0),
-        ifAbsent: () =>
-            double.tryParse(t.amount.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0,
+        (v) => v + _amountOf(t),
+        ifAbsent: () => _amountOf(t),
       );
     }
     if (cats.isEmpty) return 'N/A';
     return cats.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+  }
+
+  // ── Helpers / derived data for the Home dashboard ─────────────────────────────
+  /// Parses the numeric value out of a formatted amount string (strips symbols).
+  double _amountOf(TransactionModel t) =>
+      double.tryParse(t.amount.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
+
+  /// Numeric total of debits for the currently selected month.
+  double get monthTotalAmount => filteredTransactions
+      .where((t) => t.isDebit)
+      .fold<double>(0, (sum, t) => sum + _amountOf(t));
+
+  /// The newest [count] transactions across all months (newest first).
+  /// `_allTransactions` is already ordered newest-first by the fetch query.
+  List<TransactionModel> recentTransactions([int count = 4]) =>
+      _allTransactions.take(count).toList();
+
+  /// Debit totals for the last 6 calendar months, oldest → newest.
+  List<double> get last6MonthsTotals {
+    final now = DateTime.now();
+    return List.generate(6, (i) {
+      final m = DateTime(now.year, now.month - (5 - i));
+      return _allTransactions
+          .where(
+            (t) => t.isDebit && t.date.year == m.year && t.date.month == m.month,
+          )
+          .fold<double>(0, (sum, t) => sum + _amountOf(t));
+    });
+  }
+
+  /// Short month labels matching [last6MonthsTotals], oldest → newest.
+  List<String> get last6MonthsLabels {
+    final now = DateTime.now();
+    return List.generate(6, (i) {
+      final m = DateTime(now.year, now.month - (5 - i));
+      return _months[m.month - 1].toUpperCase();
+    });
   }
 
   // ── Month navigation ──────────────────────────────────────────────────────────

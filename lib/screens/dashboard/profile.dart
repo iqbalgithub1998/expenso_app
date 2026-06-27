@@ -66,11 +66,17 @@ class ProfileScreen extends StatelessWidget {
 
             // ── Scrollable Body ──────────────────────────────────────────
             Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 20.w),
-                child: Column(
-                  children: [
-                    SizedBox(height: 16.h),
+              child: Obx(
+                () => RefreshIndicator(
+                  color: _green,
+                  backgroundColor: _surface2,
+                  onRefresh: controller.onRefresh,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.symmetric(horizontal: 20.w),
+                    child: Column(
+                      children: [
+                        SizedBox(height: 16.h),
 
                     // ── Avatar ─────────────────────────────────────────
                     Stack(
@@ -100,11 +106,25 @@ class ProfileScreen extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                           child: ClipOval(
-                            child: Icon(
-                              Icons.person,
-                              size: 72.sp,
-                              color: _textSecondary,
-                            ),
+                            child: controller.isLoading.value
+                                ? SizedBox(
+                                    width: 24.w,
+                                    height: 24.w,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: _green,
+                                    ),
+                                  )
+                                : Center(
+                                    child: Text(
+                                      controller.initials,
+                                      style: TextStyle(
+                                        fontSize: 38.sp,
+                                        fontWeight: FontWeight.w800,
+                                        color: _textPrimary,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                         Positioned(
@@ -146,7 +166,9 @@ class ProfileScreen extends StatelessWidget {
 
                     // ── Name & Badge ───────────────────────────────────
                     Text(
-                      'Alex Sterling',
+                      controller.isLoading.value
+                          ? 'Loading…'
+                          : controller.displayName,
                       style: TextStyle(
                         fontSize: 26.sp,
                         fontWeight: FontWeight.w900,
@@ -156,7 +178,9 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 4.h),
                     Text(
-                      'Premium Member Since 2022',
+                      controller.memberSince.isEmpty
+                          ? 'Expenso Member'
+                          : controller.memberSince,
                       style: TextStyle(
                         fontSize: 13.sp,
                         color: _textSecondary,
@@ -165,6 +189,50 @@ class ProfileScreen extends StatelessWidget {
                     ),
 
                     SizedBox(height: 32.h),
+
+                    // ── Account ───────────────────────────────────────
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Account',
+                        style: TextStyle(
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.w800,
+                          color: _textPrimary,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 12.h),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: _surface,
+                        borderRadius: BorderRadius.circular(20.r),
+                        border: Border.all(color: _border),
+                      ),
+                      child: Column(
+                        children: [
+                          _PrefRow(
+                            icon: Icons.alternate_email,
+                            iconBg: _surface2,
+                            iconColor: _textSecondary,
+                            title: 'Email',
+                            subtitle: controller.email,
+                            onTap: () {},
+                          ),
+                          const _Divider(),
+                          _PrefRow(
+                            icon: Icons.phone_outlined,
+                            iconBg: _surface2,
+                            iconColor: _textSecondary,
+                            title: 'Phone',
+                            subtitle: controller.phone,
+                            onTap: () {},
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    SizedBox(height: 28.h),
 
                     // ── Preferences ────────────────────────────────────
                     Align(
@@ -226,22 +294,19 @@ class ProfileScreen extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-                                Obx(
-                                  () => Switch(
-                                    value: controller.pushNotifications.value,
-                                    onChanged:
-                                        controller.togglePushNotifications,
-                                    activeThumbColor: Colors.white,
-                                    activeTrackColor: _green,
-                                    inactiveThumbColor: _textSecondary,
-                                    inactiveTrackColor: _surface2,
-                                  ),
+                                Switch(
+                                  value: controller.pushNotifications.value,
+                                  onChanged: controller.togglePushNotifications,
+                                  activeThumbColor: Colors.white,
+                                  activeTrackColor: _green,
+                                  inactiveThumbColor: _textSecondary,
+                                  inactiveTrackColor: _surface2,
                                 ),
                               ],
                             ),
                           ),
 
-                          _Divider(),
+                          const _Divider(),
 
                           _PrefRow(
                             icon: Icons.language_outlined,
@@ -252,7 +317,7 @@ class ProfileScreen extends StatelessWidget {
                             onTap: controller.onLanguageTap,
                           ),
 
-                          _Divider(),
+                          const _Divider(),
 
                           _PrefRow(
                             icon: Icons.monetization_on_outlined,
@@ -328,6 +393,8 @@ class ProfileScreen extends StatelessWidget {
 
                     SizedBox(height: 24.h),
                   ],
+                ),
+              ),
                 ),
               ),
             ),
@@ -422,6 +489,8 @@ class _PrefRow extends StatelessWidget {
 // ── Divider ────────────────────────────────────────────────────────────────────
 
 class _Divider extends StatelessWidget {
+  const _Divider();
+
   @override
   Widget build(BuildContext context) {
     return Padding(
