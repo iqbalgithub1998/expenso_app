@@ -23,6 +23,7 @@ dependencies:
   awesome_snackbar_content: ^0.1.8
   flutter_contacts: ^2.0.2
   flutter_native_splash: ^2.4.7
+  package_rename: ^1.10.1
 
 dev_dependencies:
   flutter_test:
@@ -45,6 +46,11 @@ flutter_native_splash:
     color: "#FFFFFF"
     image: assets/icon/splash.png    
     icon_background_color: "#FFFFFF"
+
+package_rename_config:
+  android:
+    app_name: "Expenso"
+    package_name: "com.mik.expenso"
    
 flutter:
   uses-material-design: true
